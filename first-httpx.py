@@ -2,6 +2,7 @@ import trio
 import httpx
 import warnings
 from trio import TrioDeprecationWarning
+# turn off deprecation warning
 warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
 url_g = (f"https://mastodon.social/api/v1/directory?limit=80?offset={i * 80}" for i in range(100))
@@ -12,7 +13,6 @@ async def get_header():
         response = await client.get(next(url_g), timeout=60)
         d = dict(response.headers)
         print(f"{d['x-ratelimit-remaining']=} {d['x-ratelimit-reset']=}")
-
 
 
 async def main():
