@@ -1,4 +1,5 @@
 import trio
+import httpx
 
 
 async def child1():
