@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-t = '2022-11-24T00:05:00.346145Z'
+t = '2022-11-24T15:15:00.235072+00:00'  # '2022-11-24T00:05:00.346145Z'
 
 reset_time = datetime.fromisoformat(t)
 print(reset_time)

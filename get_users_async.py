@@ -19,17 +19,19 @@ class GetMastodonData:
             d = dict(response.headers)
             try:
                 print(f"{d['x-ratelimit-remaining']=} {d['x-ratelimit-reset']=}")
-                reset_time = datetime.fromisoformat(d['x-ratelimit-reset'])
+                reset_time = datetime.fromisoformat(d['x-ratelimit-reset'].replace('Z', '+00:00'))
                 self.last_reset_time = max(self.last_reset_time, reset_time)
-            except KeyError:
-                print('key error')
+            except (KeyError) as e:
+                print(f'{e} : {d}')
+            for r in response.json():
+                print(r['url'])
 
 
 async def main():
     gmd = GetMastodonData()
     with trio.move_on_after(300) as cancel_scope:  # cancel after 5 min
         async with trio.open_nursery() as nursery:
-            for _ in range(300):
+            for _ in range(2):
                 nursery.start_soon(gmd.get_header)
             print("Requests have been scheduled...")
     if cancel_scope.cancelled_caught:
