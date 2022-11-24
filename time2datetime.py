@@ -9,3 +9,6 @@ print(f'{last_reset_time.tzinfo=}')
 print(f'{reset_time.tzinfo=}')
 last_reset_time = max(last_reset_time, reset_time)
 print(f'last_reset_time=')
+
+print(f'last_reset_time:\t{last_reset_time:%H:%M:%S}')
+print(f'now:\t\t\t\t{datetime.now(timezone.utc):%H:%M:%S}')
