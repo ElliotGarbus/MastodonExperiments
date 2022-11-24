@@ -37,6 +37,8 @@ async def main():
     else:
         print('Competed successfully!')
     print(f'{gmd.last_reset_time=}')
+    print(f'{datetime.now(timezone.utc)=}')
+    print(f'{gmd.last_reset_time - datetime.now(timezone.utc)}')
 
 
 trio.run(main)
