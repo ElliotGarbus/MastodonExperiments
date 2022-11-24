@@ -24,14 +24,14 @@ class GetMastodonData:
             except (KeyError) as e:
                 print(f'{e} : {d}')
             for r in response.json():
-                print(r['url'])
+                print(f"{r['url']} followers: {r['followers_count']}")
 
 
 async def main():
     gmd = GetMastodonData()
-    with trio.move_on_after(300) as cancel_scope:  # cancel after 5 min
+    with trio.move_on_after(5 * 60) as cancel_scope:  # cancel after 5 min
         async with trio.open_nursery() as nursery:
-            for _ in range(2):
+            for _ in range(20):
                 nursery.start_soon(gmd.get_header)
             print("Requests have been scheduled...")
     if cancel_scope.cancelled_caught:
