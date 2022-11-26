@@ -1,9 +1,10 @@
 from pathlib import Path
-from pprint import pprint
+import json
 
-path = Path('mastodon_users.txt')
+path = Path('saved/mastodon_users.txt')
 
 with open(path) as f:
-    line = f.readline()
+    for line in f:
+        d = json.loads(line)
+        print(f"{d['url']} followers: {d['followers_count']}")
 
-pprint(line)

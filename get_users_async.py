@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+import json
+from pathlib import Path
 import warnings
 
 import httpx
@@ -10,29 +12,48 @@ warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
 
 class GetMastodonData:
-    url_g = (f"https://mastodon.social/api/v1/directory?limit=80?offset={i * 80}" for i in range(500))
+    url_g = None
     last_reset_time = datetime.now(timezone.utc)
 
-    async def get_header(self):
+    def __init__(self, fn='mastodon_users.txt', server='mastodon.social'):
+        self.path = Path(fn)
+        self.path.unlink(missing_ok=True)
+        self.url_g = (f"https://{server}/api/v1/directory?limit=80?offset={i * 80}" for i in range(500))
+
+    async def get_data(self):
         async with httpx.AsyncClient() as client:
             response = await client.get(next(self.url_g), timeout=180)  # allow three minutes for a get() to complete
             d = dict(response.headers)
             try:
-                print(f"{d['x-ratelimit-remaining']=} {d['x-ratelimit-reset']=}")
+                rate_limit_reset = d['x-ratelimit-reset']
+                rate_limit_remaining = d['x-ratelimit-remaining']
+                print(f"{rate_limit_remaining=} {rate_limit_reset=}")
+                if rate_limit_remaining == '0':
+                    raise ValueError
                 reset_time = datetime.fromisoformat(d['x-ratelimit-reset'].replace('Z', '+00:00'))
                 self.last_reset_time = max(self.last_reset_time, reset_time)
-            except (KeyError) as e:
+            except KeyError as e:
                 print(f'{e} : {d}')
-            for r in response.json():
-                print(f"{r['url']} followers: {r['followers_count']}")
+            self.save(response)
+
+    def save(self, r):
+        users = r.json()
+        for user in users:
+            with open(self.path, 'a') as f:
+                json.dump(user, f)
+                f.write('\n')
+            try:
+                print(f"{user['url']} followers: {user['followers_count']}")
+            except (KeyError, TypeError):
+                print('Error')
 
 
 async def main():
     gmd = GetMastodonData()
     with trio.move_on_after(5 * 60) as cancel_scope:  # cancel after 5 min
         async with trio.open_nursery() as nursery:
-            for _ in range(20):
-                nursery.start_soon(gmd.get_header)
+            for _ in range(25):
+                nursery.start_soon(gmd.get_data)
             print("Requests have been scheduled...")
     if cancel_scope.cancelled_caught:
         print('ERROR: time limit exceeded')
