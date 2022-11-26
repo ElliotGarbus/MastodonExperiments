@@ -29,7 +29,7 @@ class GetMastodonData:
                 rate_limit_remaining = d['x-ratelimit-remaining']
                 print(f"{rate_limit_remaining=} {rate_limit_reset=}")
                 if rate_limit_remaining == '0':
-                    raise ValueError
+                    raise ValueError('Rate Limit Remaining is Zero')
                 reset_time = datetime.fromisoformat(d['x-ratelimit-reset'].replace('Z', '+00:00'))
                 self.last_reset_time = max(self.last_reset_time, reset_time)
             except KeyError as e:
