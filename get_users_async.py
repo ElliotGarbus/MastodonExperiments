@@ -15,13 +15,14 @@ class GetMastodonData:
     url_g = None
     last_reset_time = datetime.now(timezone.utc)
 
-    def __init__(self, fn='mastodon_users.txt', server='mastodon.social'):
-        self.path = Path(fn)
-        self.path.unlink(missing_ok=True)
+    def __init__(self, fn='mastodon_users.txt', chkpt_fn='checkpoint.txt', server='mastodon.social'):
+        self.data_path = Path(fn)
+        self.data_path.unlink(missing_ok=True)
         self.url_g = (f"https://{server}/api/v1/directory?limit=80?offset={i * 80}" for i in range(500))
 
     async def get_data(self):
         async with httpx.AsyncClient() as client:
+            url = next(self.url_g)
             response = await client.get(next(self.url_g), timeout=180)  # allow three minutes for a get() to complete
             d = dict(response.headers)
             try:
@@ -34,25 +35,25 @@ class GetMastodonData:
                 self.last_reset_time = max(self.last_reset_time, reset_time)
             except KeyError as e:
                 print(f'{e} : {d}')
-            self.save(response)
+            self.save(response, url)
 
-    def save(self, r):
+    def save(self, r, url):
         users = r.json()
         for user in users:
-            with open(self.path, 'a') as f:
+            with open(self.data_path, 'a') as f:
                 json.dump(user, f)
                 f.write('\n')
             try:
                 print(f"{user['url']} followers: {user['followers_count']}")
             except (KeyError, TypeError):
-                print('Error')
+                print(f'Error: {user} {url}')
 
 
 async def main():
     gmd = GetMastodonData()
     with trio.move_on_after(5 * 60) as cancel_scope:  # cancel after 5 min
         async with trio.open_nursery() as nursery:
-            for _ in range(25):
+            for _ in range(50):
                 nursery.start_soon(gmd.get_data)
             print("Requests have been scheduled...")
     if cancel_scope.cancelled_caught:
