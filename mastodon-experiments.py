@@ -12,7 +12,7 @@ path = Path('mastodon_users.txt')
 path.unlink(missing_ok=True)
 
 for i in range(20):
-    response = requests.get(f"https://mastodon.social/api/v1/directory?order=new?local=true?limit=40?offset={i * 40}")
+    response = requests.get(f"https://mastodon.social/api/v1/directory?order=new?local=true?limit=40?offset={i * 40 + 100000}")
     print(f"{response.headers['X-RateLimit-Remaining']=} {response.headers['X-RateLimit-Reset']=}")
     if response.status_code != 200:
         print(f'Invalid Response {response}')
