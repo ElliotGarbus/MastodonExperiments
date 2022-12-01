@@ -17,7 +17,7 @@ class GetMastodonData:
         self.data_fn.unlink(missing_ok=True)
         self.fail_fn = Path(fail_fn)  # urls that do not successfully return data
         self.fail_fn.unlink(missing_ok=True)
-        self.url_g = (f"https://{server}/api/v1/directory?limit=80?local=true?offset={i * 80}?order=new" for i in range(10_000))
+        self.url_g = (f"https://{server}/api/v1/directory?limit=80?local=true?offset={i * 80}" for i in range(10_000))
         self.server = server
         self.last_reset_time = datetime.now(timezone.utc)
         self.fail_count = 0
@@ -43,7 +43,6 @@ class GetMastodonData:
     async def get_data(self):
         async with httpx.AsyncClient() as client:
             url = next(self.url_g)
-            print(f'{url=}')
             response = await client.get(url, timeout=180)  # allow three minutes for a get() to complete
             self._set_last_reset_time(response)
             self.save(response, url)
@@ -73,21 +72,21 @@ async def main():
     gmd = GetMastodonData()
     users = gmd.number_of_users()
     print(f'User count: {users}')
-    s_req = 5  # number of simultaneous requests
-    # while gmd.seconds_remaining >= (60 * 5) // (300//s_req) and users >= s_req:
+    s_req = 10  # number of simultaneous requests
     while users >= s_req:
-        # s_req/300 % of allowed number of messages, 5min/(300/s_req) is the time for s_req messages
-        async with trio.open_nursery() as nursery:
-            for _ in range(s_req):  # requests at a time that works without server failures on mastodon.social
-                nursery.start_soon(gmd.get_data)
-                users -= 80  # get 80 users per call
-            print("Requests have been scheduled...")
-        print(f'Competed successfully! {users=} {gmd.seconds_remaining=}')
-    print(f'{gmd.seconds_remaining=}')
-    # sleep_time = (gmd.last_reset_time - datetime.now(timezone.utc)).total_seconds()
-    # print(f'sleeping... wait time (sec): {sleep_time}')
-    # if sleep_time > 0:
-    #     await trio.sleep(sleep_time)
+        for _ in range(30): # 30 x 10 = 300 calls
+            async with trio.open_nursery() as nursery:
+                start = trio.current_time()
+                for _ in range(s_req):  # 10 requests at a time, works without server failures on mastodon.social
+                    nursery.start_soon(gmd.get_data)
+                    users -= 80  # get 80 users per call
+                print("Requests have been scheduled...")
+            print(f'Competed successfully! {users=} Seconds remaining to limit reset: {gmd.seconds_remaining}')
+            # target 300 call/5min, 1 call/sec... add wait to slow down to that rate
+            elapsed_time = trio.current_time() - start
+            print(f'{elapsed_time=}')
+            if elapsed_time < 10:
+                await trio.sleep(10 - elapsed_time)
     print(f'wait complete, Number of failures: {gmd.fail_count}')
 
 
