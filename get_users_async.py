@@ -21,6 +21,7 @@ class GetMastodonData:
         self.server = server
         self.last_reset_time = datetime.now(timezone.utc)
         self.fail_count = 0
+        self.unique_url = set()
 
     @property
     def seconds_remaining(self):
@@ -56,16 +57,24 @@ class GetMastodonData:
     def save(self, r, url):
         users = r.json()
         for user in users:
-            with open(self.data_fn, 'a') as f:
+            with open('all.txt', 'a') as f:
                 json.dump(user, f)
                 f.write('\n')
-            try:
-                print(f"{user['url']} followers: {user['followers_count']}")
-            except (KeyError, TypeError):
-                print(f'Error: {user} {url}')
+            if user == 'error':
                 self.fail_count += 1
                 with open(self.fail_fn, 'a') as ffn:
                     ffn.write(f'{url}\n')
+                continue
+            if user['url'] in self.unique_url:
+                print(f"user not unique: {user['url']}")
+                continue
+
+            self.unique_url.add(user['url'])
+
+            with open(self.data_fn, 'a') as f:
+                json.dump(user, f)
+                f.write('\n')
+                print(f"{user['url']} followers: {user['followers_count']}")
 
 
 async def main():

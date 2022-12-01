@@ -3,6 +3,7 @@ import json
 from collections import Counter
 
 path = Path('mastodon_users.txt')
+# path = Path('all.txt')
 line_count = 0
 count = Counter()
 with open(path) as f:
