@@ -10,6 +10,7 @@ from trio import TrioDeprecationWarning
 # turn off deprecation warning issue with a httpx dependency, anyio
 warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
+#todo: add a resume file that captures the last offset, so a file can be resumed.
 
 class GetMastodonData:
     def __init__(self, fn='mastodon_users.txt', fail_fn='checkpoint.txt', server='mastodon.social'):
@@ -17,7 +18,7 @@ class GetMastodonData:
         self.data_fn.unlink(missing_ok=True)
         self.fail_fn = Path(fail_fn)  # urls that do not successfully return data
         self.fail_fn.unlink(missing_ok=True)
-        self.url_g = (f"https://{server}/api/v1/directory?limit=80?local=true?offset={i * 80}" for i in range(10_000))
+        self.url_g = (f"https://{server}/api/v1/directory?order=new?limit=80?offset={i * 80}" for i in range(10_000))
         self.server = server
         self.last_reset_time = datetime.now(timezone.utc)
         self.fail_count = 0
@@ -62,6 +63,7 @@ class GetMastodonData:
                 f.write('\n')
             if user == 'error':
                 self.fail_count += 1
+                # print(f'Error detected: {user}')
                 with open(self.fail_fn, 'a') as ffn:
                     ffn.write(f'{url}\n')
                 continue
@@ -75,6 +77,8 @@ class GetMastodonData:
                 json.dump(user, f)
                 f.write('\n')
                 print(f"{user['url']} followers: {user['followers_count']}")
+            with open('last_url.txt', 'w') as f:
+                f.write(url)
 
 
 async def main():
@@ -95,7 +99,7 @@ async def main():
             elapsed_time = trio.current_time() - start
             print(f'{elapsed_time=}')
             if elapsed_time < 10:
-                await trio.sleep(10 - elapsed_time)
+                await trio.sleep(10.1 - elapsed_time)
     print(f'wait complete, Number of failures: {gmd.fail_count}')
 
 
