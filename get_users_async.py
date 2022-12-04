@@ -17,7 +17,7 @@ class GetMastodonData:
         self.data_fn.unlink(missing_ok=True)
         self.fail_fn = Path(fail_fn)  # urls that do not successfully return data
         self.fail_fn.unlink(missing_ok=True)
-        self.url_g = (f"https://{server}/api/v1/directory?limit=80?local=true?offset={i * 80}" for i in range(10_000))
+        self.url_g = (f"https://{server}/api/v1/directory?limit=80?offset={i * 80}" for i in range(10_000))
         self.server = server
         self.last_reset_time = datetime.now(timezone.utc)
         self.fail_count = 0
@@ -95,8 +95,8 @@ async def main():
             elapsed_time = trio.current_time() - start
             print(f'{elapsed_time=}')
             if elapsed_time < 10:
-                await trio.sleep(10 - elapsed_time)
-    print(f'wait complete, Number of failures: {gmd.fail_count}')
+                await trio.sleep(10.1 - elapsed_time)  # added .1, 3 sec guard-band
+            print(f'wait complete, Number of failures: {gmd.fail_count}')
 
 
 trio.run(main)
