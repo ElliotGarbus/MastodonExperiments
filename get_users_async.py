@@ -19,7 +19,7 @@ class GetMastodonData:
         # self.data_fn.unlink(missing_ok=True)
         self.fail_fn = Path(fail_fn)  # urls that do not successfully return data
         self.fail_fn.unlink(missing_ok=True)
-        self.url_g = (f"https://{server}/api/v1/directory?order=new?limit=80?offset={i * 80}" for i in range(int(0/80), 10_000))
+        self.url_g = (f"https://{server}/api/v1/directory?order=new?limit=80?offset={i * 80}" for i in range(0, 10_000))
         self.server = server
         self.last_reset_time = datetime.now(timezone.utc)
         self.fail_count = 0
