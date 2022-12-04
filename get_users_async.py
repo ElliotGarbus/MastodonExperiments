@@ -10,6 +10,11 @@ from trio import TrioDeprecationWarning
 # turn off deprecation warning issue with a httpx dependency, anyio
 warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
+# todo: catch exception for rate limit at zero...
+# at startup check for the last_url file, if it exists prompt to start from resume point
+# also at startup, load the users file and populate the unique url dict
+# create utility to remove duplicates from users file manual restarts will result in duplicate users
+
 
 class GetMastodonData:
     def __init__(self, fn='mastodon_users.txt', fail_fn='checkpoint.txt', server='mastodon.social'):
@@ -17,7 +22,7 @@ class GetMastodonData:
         # self.data_fn.unlink(missing_ok=True)
         self.fail_fn = Path(fail_fn)  # urls that do not successfully return data
         self.fail_fn.unlink(missing_ok=True)
-        self.url_g = (f"https://{server}/api/v1/directory?order=new?limit=80?offset={i * 80}" for i in range(465, 10_000))
+        self.url_g = (f"https://{server}/api/v1/directory?order=new?limit=80?offset={i * 80}" for i in range(int(785760/80), 10_000))
         self.server = server
         self.last_reset_time = datetime.now(timezone.utc)
         self.fail_count = 0
@@ -98,7 +103,7 @@ async def main():
             elapsed_time = trio.current_time() - start
             print(f'{elapsed_time=}')
             if elapsed_time <= 10:
-                await trio.sleep(10.5 - elapsed_time)  # add some buffer to the time
+                await trio.sleep(11 - elapsed_time)  # add some buffer to the time
             print(f'wait complete, Number of failures: {gmd.fail_count}')
 
 
