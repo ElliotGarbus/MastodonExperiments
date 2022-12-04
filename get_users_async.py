@@ -14,10 +14,10 @@ warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 class GetMastodonData:
     def __init__(self, fn='mastodon_users.txt', fail_fn='checkpoint.txt', server='mastodon.social'):
         self.data_fn = Path(fn)
-        self.data_fn.unlink(missing_ok=True)
+        # self.data_fn.unlink(missing_ok=True)
         self.fail_fn = Path(fail_fn)  # urls that do not successfully return data
         self.fail_fn.unlink(missing_ok=True)
-        self.url_g = (f"https://{server}/api/v1/directory?limit=80?offset={i * 80}" for i in range(10_000))
+        self.url_g = (f"https://{server}/api/v1/directory?order=new?limit=80?offset={i * 80}" for i in range(465, 10_000))
         self.server = server
         self.last_reset_time = datetime.now(timezone.utc)
         self.fail_count = 0
@@ -57,11 +57,12 @@ class GetMastodonData:
     def save(self, r, url):
         users = r.json()
         for user in users:
-            with open('all.txt', 'a') as f:
-                json.dump(user, f)
-                f.write('\n')
+            # with open('all.txt', 'a') as f:
+            #     json.dump(user, f)
+            #     f.write('\n')
             if user == 'error':
                 self.fail_count += 1
+                # print(f'Error detected: {user}')
                 with open(self.fail_fn, 'a') as ffn:
                     ffn.write(f'{url}\n')
                 continue
@@ -75,6 +76,8 @@ class GetMastodonData:
                 json.dump(user, f)
                 f.write('\n')
                 print(f"{user['url']} followers: {user['followers_count']}")
+            with open('last_url.txt', 'w') as f:
+                f.write(url)
 
 
 async def main():
@@ -94,8 +97,8 @@ async def main():
             # target 300 call/5min, 1 call/sec... add wait to slow down to that rate
             elapsed_time = trio.current_time() - start
             print(f'{elapsed_time=}')
-            if elapsed_time < 10:
-                await trio.sleep(10.1 - elapsed_time)  # added .1, 3 sec guard-band
+            if elapsed_time <= 10:
+                await trio.sleep(10.5 - elapsed_time)  # add some buffer to the time
             print(f'wait complete, Number of failures: {gmd.fail_count}')
 
 
