@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import sys
 import warnings
 
 import httpx
@@ -9,17 +10,16 @@ from trio import TrioDeprecationWarning
 
 # turn off deprecation warning issue with a httpx dependency, anyio
 warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
-
 # todo: catch exception for StopIteration
 
-
 class GetMastodonData:
-    def __init__(self, fn='mastodon_users.txt', fail_fn='checkpoint.txt', server='mastodon.social'):
-        self.data_fn = Path(fn)
-        # self.data_fn.unlink(missing_ok=True)
+    def __init__(self, fail_fn='checkpoint.txt', server='mastodon.social'):
+        self.data_fn = Path(server.replace('.', '_') + '_users.txt')
+        print(self.data_fn)
+        self.data_fn.unlink(missing_ok=True)
         self.fail_fn = Path(fail_fn)  # urls that do not successfully return data
         self.fail_fn.unlink(missing_ok=True)
-        self.url_g = (f"https://{server}/api/v1/directory?limit=80?offset={i * 80}" for i in range(0, 10_000))
+        self.url_g = (f"https://{server}/api/v1/directory?limit=80?offset={i * 80}" for i in range(0, 100_000))
         self.server = server
         self.last_reset_time = datetime.now(timezone.utc)
         self.fail_count = 0
@@ -83,7 +83,11 @@ class GetMastodonData:
 
 
 async def main():
-    gmd = GetMastodonData()
+    try:
+        server = sys.argv[1]
+        gmd = GetMastodonData(server=server)
+    except:
+        gmd = GetMastodonData()
     users = gmd.number_of_users()
     print(f'User count: {users}')
     s_req = 10  # number of simultaneous requests
