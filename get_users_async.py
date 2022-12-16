@@ -37,10 +37,12 @@ class GetMastodonData:
             rate_limit_reset = d['x-ratelimit-reset']
             rate_limit_remaining = d['x-ratelimit-remaining']
             print(f"{rate_limit_remaining=} {rate_limit_reset=}")
-            if rate_limit_remaining == '0':
-                raise ValueError('Rate Limit Remaining is Zero')
             reset_time = datetime.fromisoformat(rate_limit_reset.replace('Z', '+00:00'))
             self.last_reset_time = max(self.last_reset_time, reset_time)
+            if rate_limit_remaining == '0':
+                print('Rate Limiting timeout reached, waiting 5 minutes for reset ')
+                trio.sleep(300) # Wait for rate limiting to reset
+
         except KeyError as e:
             print(f'{e} : {d}')
 
@@ -63,7 +65,11 @@ class GetMastodonData:
         return int(instance['stats']['user_count'])
 
     def save(self, r, url):
-        users = r.json()
+        try:
+            users = r.json()
+        except json.JSONDecodeError:
+            print('Invalid JSON in response, Response is ignored')
+            return
         for user in users:
             # with open('all.txt', 'a') as f:
             #     json.dump(user, f)
