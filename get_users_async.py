@@ -10,10 +10,7 @@ from trio import TrioDeprecationWarning
 
 # turn off deprecation warning issue with a httpx dependency, anyio
 warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
-# todo: catch exception for StopIteration
-# todo: change from a loop counter to using time to stop the iterations.
-# todo: make the url generator a method - with an unbounded range
-# todo: more robust error handling for HTTPX timeouts, pass and continue...
+
 
 class GetMastodonData:
     def __init__(self, fail_fn='checkpoint.txt', server='mastodon.social'):
@@ -26,6 +23,7 @@ class GetMastodonData:
         self.server = server
         self.last_reset_time = datetime.now(timezone.utc)
         self.fail_count = 0
+        self.time_outs = 0
         self.unique_url = set()
 
     @property
@@ -49,9 +47,14 @@ class GetMastodonData:
     async def get_data(self):
         async with httpx.AsyncClient() as client:
             url = next(self.url_g)
-            response = await client.get(url, timeout=180)  # allow three minutes for a get() to complete
-            self._set_last_reset_time(response)
-            self.save(response, url)
+            try:
+                response = await client.get(url, timeout=180)  # allow three minutes for a get() to complete
+                self._set_last_reset_time(response)
+                self.save(response, url)
+            except httpx.TimeoutException:
+                # data is sparse and repetitive - just count timeout errors
+                self.time_outs += 1
+                print(f'http.Timeout Exception total: {self.time_outs}')
 
     def number_of_users(self):
         response = httpx.get(f"https://{self.server}/api/v1/instance")
@@ -71,6 +74,7 @@ class GetMastodonData:
                 with open(self.fail_fn, 'a') as ffn:
                     ffn.write(f'{url}\n')
                 continue
+
             if user['url'] in self.unique_url:
                 print(f"user not unique: {user['url']}")
                 continue
@@ -86,29 +90,35 @@ class GetMastodonData:
 
 
 async def main():
+    hours = 3  # run time in hours
     try:
         server = sys.argv[1]
         gmd = GetMastodonData(server=server)
-    except:
+    except IndexError:
         gmd = GetMastodonData()
     users = 700_000 # gmd.number_of_users() # number of call sets for just under 3 hours.
     print(f'User count: {users}')
     s_req = 10  # number of simultaneous requests
-    while users >= s_req:
+    with trio.move_on_after(60 * 60 * hours) as cancel_scope:
         for _ in range(30): # 30 x 10 = 300 calls
             async with trio.open_nursery() as nursery:
                 start = trio.current_time()
                 for _ in range(s_req):  # 10 requests at a time, works without server failures on mastodon.social
                     nursery.start_soon(gmd.get_data)
-                    users -= 80  # get 80 users per call
-                print("Requests have been scheduled...")
-            print(f'Competed successfully! {users=} Seconds remaining to limit reset: {gmd.seconds_remaining}')
+                    # users -= 80  # get 80 users per call -- due to pagination bug no connection to user count
+                print(f'{s_req} Requests have been scheduled...')
+            print(f'Competed successfully! Seconds remaining to limit reset: {gmd.seconds_remaining}')
             # target 300 call/5min, 1 call/sec... add wait to slow down to that rate
             elapsed_time = trio.current_time() - start
             print(f'{elapsed_time=}')
             if elapsed_time <= 10:
                 await trio.sleep(12 - elapsed_time)  # add some buffer to the time
-            print(f'wait complete, Number of failures: {gmd.fail_count}')
+            print(f'wait complete, Number of invalid user records: {gmd.fail_count}, Number of Network timeouts {gmd.time_outs}')
+    if cancel_scope.cancelled_caught:
+        print('Execution Completed Normally, scheduled execution time has expired')
+        print(f'Number of invalid user records: {gmd.fail_count}, Number of Network timeouts {gmd.time_outs}')
+    else:
+        print('Exit with unhandled exception')
 
 
 trio.run(main)
