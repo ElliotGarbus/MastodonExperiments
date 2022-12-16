@@ -11,6 +11,9 @@ from trio import TrioDeprecationWarning
 # turn off deprecation warning issue with a httpx dependency, anyio
 warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 # todo: catch exception for StopIteration
+# todo: change from a loop counter to using time to stop the iterations.
+# todo: make the url generator a method - with an unbounded range
+# todo: more robust error handling for HTTPX timeouts, pass and continue...
 
 class GetMastodonData:
     def __init__(self, fail_fn='checkpoint.txt', server='mastodon.social'):
