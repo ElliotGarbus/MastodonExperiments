@@ -2,10 +2,16 @@ from pathlib import Path
 import json
 from pprint import pprint
 import webbrowser
+import sys
 
 
 users = []
-path = Path('mastodon_users.txt')
+try:
+    file = sys.argv[1]
+except IndexError:
+    raise ValueError('No file argument')
+
+path = Path(file)
 with open(path) as f:
     for line in f:
         d = json.loads(line)
