@@ -88,7 +88,7 @@ async def main():
         gmd = GetMastodonData(server=server)
     except:
         gmd = GetMastodonData()
-    users = gmd.number_of_users()
+    users = 700_000 # gmd.number_of_users() # number of call sets for just under 3 hours.
     print(f'User count: {users}')
     s_req = 10  # number of simultaneous requests
     while users >= s_req:
