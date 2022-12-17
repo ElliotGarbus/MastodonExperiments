@@ -11,6 +11,8 @@ from trio import TrioDeprecationWarning
 # turn off deprecation warning issue with a httpx dependency, anyio
 warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
+# todo add logging
+# todo: add cli?
 
 class GetMastodonData:
     def __init__(self, fail_fn='checkpoint.txt', server='mastodon.social'):
@@ -53,7 +55,7 @@ class GetMastodonData:
                 response = await client.get(url, timeout=180)  # allow three minutes for a get() to complete
                 self._set_last_reset_time(response)
                 self.save(response, url)
-            except httpx.TimeoutException:
+            except (httpx.TimeoutException, httpx.ConnectError):
                 # data is sparse and repetitive - just count timeout errors
                 self.time_outs += 1
                 print(f'http.Timeout Exception total: {self.time_outs}')
@@ -69,6 +71,7 @@ class GetMastodonData:
             users = r.json()
         except json.JSONDecodeError:
             print('Invalid JSON in response, Response is ignored')
+            # todo:  add count of invalid responses
             return
         for user in users:
             # with open('all.txt', 'a') as f:
@@ -106,20 +109,21 @@ async def main():
     print(f'User count: {users}')
     s_req = 10  # number of simultaneous requests
     with trio.move_on_after(60 * 60 * hours) as cancel_scope:
-        for _ in range(30): # 30 x 10 = 300 calls
-            async with trio.open_nursery() as nursery:
-                start = trio.current_time()
-                for _ in range(s_req):  # 10 requests at a time, works without server failures on mastodon.social
-                    nursery.start_soon(gmd.get_data)
-                    # users -= 80  # get 80 users per call -- due to pagination bug no connection to user count
-                print(f'{s_req} Requests have been scheduled...')
-            print(f'Competed successfully! Seconds remaining to limit reset: {gmd.seconds_remaining}')
-            # target 300 call/5min, 1 call/sec... add wait to slow down to that rate
-            elapsed_time = trio.current_time() - start
-            print(f'{elapsed_time=}')
-            if elapsed_time <= 10:
-                await trio.sleep(12 - elapsed_time)  # add some buffer to the time
-            print(f'wait complete, Number of invalid user records: {gmd.fail_count}, Number of Network timeouts {gmd.time_outs}')
+        while True:
+            for _ in range(30): # 30 x 10 = 300 calls
+                async with trio.open_nursery() as nursery:
+                    start = trio.current_time()
+                    for _ in range(s_req):  # 10 requests at a time, works without server failures on mastodon.social
+                        nursery.start_soon(gmd.get_data)
+                        # users -= 80  # get 80 users per call -- due to pagination bug no connection to user count
+                    print(f'{s_req} Requests have been scheduled...')
+                print(f'Competed successfully! Seconds remaining to limit reset: {gmd.seconds_remaining}')
+                # target 300 call/5min, 1 call/sec... add wait to slow down to that rate
+                elapsed_time = trio.current_time() - start
+                print(f'{elapsed_time=}')
+                if elapsed_time <= 10:
+                    await trio.sleep(12 - elapsed_time)  # add some buffer to the time
+                print(f'wait complete, Number of invalid user records: {gmd.fail_count}, Number of Network timeouts {gmd.time_outs}')
     if cancel_scope.cancelled_caught:
         print('Execution Completed Normally, scheduled execution time has expired')
         print(f'Number of invalid user records: {gmd.fail_count}, Number of Network timeouts {gmd.time_outs}')
