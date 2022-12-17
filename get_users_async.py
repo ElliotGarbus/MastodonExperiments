@@ -36,13 +36,13 @@ class GetMastodonData:
     def _set_last_reset_time(self, response):
         d = dict(response.headers)
         try:
-            rate_limit_reset = d['x-ratelimit-reset']
-            rate_limit_remaining = d['x-ratelimit-remaining']
+            rate_limit_reset = d['x-ratelimit-reset']  # time until the rate limit resets
+            rate_limit_remaining = d['x-ratelimit-remaining']  # number of messages allowed until reset
             print(f"{rate_limit_remaining=} {rate_limit_reset=}")
             reset_time = datetime.fromisoformat(rate_limit_reset.replace('Z', '+00:00'))
             self.last_reset_time = max(self.last_reset_time, reset_time)
             if rate_limit_remaining == '0':
-                print('Rate Limiting timeout reached, waiting 30 seconds for reset ')
+                print('Rate Limiting timeout reached, waiting for reset ')
                 trio.sleep(30) # Wait for rate limiting to reset, Should be enough for the count to roll-over
 
         except KeyError as e:
@@ -127,8 +127,6 @@ async def main():
     if cancel_scope.cancelled_caught:
         print('Execution Completed Normally, scheduled execution time has expired')
         print(f'Number of invalid user records: {gmd.fail_count}, Number of Network timeouts {gmd.time_outs}')
-    else:
-        print('Exit with unhandled exception')
 
 
 trio.run(main)
