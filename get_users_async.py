@@ -11,8 +11,6 @@ from trio import TrioDeprecationWarning
 # turn off deprecation warning issue with a httpx dependency, anyio
 warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
-# todo add logging
-# todo: add cli? make runtime an parameter
 
 class GetMastodonData:
     def __init__(self, fail_fn='checkpoint.txt', server='mastodon.social'):
@@ -24,14 +22,22 @@ class GetMastodonData:
         self.url_g = (f"https://{server}/api/v1/directory?limit=80?offset={i * 80}" for i in range(0, 100_000))
         self.server = server
         self.last_reset_time = datetime.now(timezone.utc)
-        self.fail_count = 0
-        self.time_outs = 0
         self.unique_url = set()
+        self._stats = {'json errors': 0, 'network errors': 0, 'bad headers': 0, 'invalid user record': 0,
+                       'total records': 0}
 
     @property
     def seconds_remaining(self):
         # only valid after at least one data access
         return (self.last_reset_time - datetime.now(timezone.utc)).total_seconds()
+    
+    @property
+    def stats(self):
+        summary = ''
+        for k, v in self._stats.items():
+            summary += f'{k} = {v}; '
+        summary += f'Unique urls: {len(self.unique_url)}'
+        return summary
 
     def _set_last_reset_time(self, response):
         d = dict(response.headers)
@@ -46,7 +52,9 @@ class GetMastodonData:
                 trio.sleep(30) # Wait for rate limiting to reset, Should be enough for the count to roll-over
 
         except KeyError as e:
+            self._stats['bad headers'] += 1
             print(f'{e} : {d}')
+
 
     async def get_data(self):
         async with httpx.AsyncClient() as client:
@@ -57,8 +65,8 @@ class GetMastodonData:
                 self.save(response, url)
             except (httpx.TimeoutException, httpx.ConnectError):
                 # data is sparse and repetitive - just count timeout errors
-                self.time_outs += 1
-                print(f'http.Timeout Exception total: {self.time_outs}')
+                self._stats['network errors'] += 1
+                print(f'Network Exception, total: {self._stats["network errors"]}')
 
     def number_of_users(self):
         response = httpx.get(f"https://{self.server}/api/v1/instance")
@@ -71,14 +79,15 @@ class GetMastodonData:
             users = r.json()
         except json.JSONDecodeError:
             print('Invalid JSON in response, Response is ignored')
-            # todo:  add count of invalid responses
+            self._stats['json errors'] += 1
             return
         for user in users:
-            # with open('all.txt', 'a') as f:
+            self._stats['total records'] += 1
+            # with open('all.txt', 'a') as f:  # save all data, for debug
             #     json.dump(user, f)
             #     f.write('\n')
             if user == 'error':
-                self.fail_count += 1
+                self._stats['invalid user record'] += 1
                 # print(f'Error detected: {user}')
                 with open(self.fail_fn, 'a') as ffn:
                     ffn.write(f'{url}\n')
@@ -94,7 +103,7 @@ class GetMastodonData:
                 json.dump(user, f)
                 f.write('\n')
                 print(f"{user['url']} followers: {user['followers_count']}")
-            with open('last_url.txt', 'w') as f:
+            with open('last_url.txt', 'w') as f:  # used to capture the last url - used to resume a search (not used)
                 f.write(url)
 
 
@@ -118,10 +127,10 @@ async def main(server, hours):
                 print(f'{elapsed_time=}')
                 if elapsed_time <= 10:
                     await trio.sleep(12 - elapsed_time)  # add some buffer to the time
-                print(f'wait complete, Number of invalid user records: {gmd.fail_count}, Number of Network timeouts {gmd.time_outs}')
+                print(f'wait complete, {gmd.stats}')
     if cancel_scope.cancelled_caught:
         print('Execution Completed Normally, scheduled execution time has expired')
-        print(f'Number of invalid user records: {gmd.fail_count}, Number of Network timeouts {gmd.time_outs}')
+        print(gmd.stats)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
