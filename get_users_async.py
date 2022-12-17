@@ -12,7 +12,8 @@ from trio import TrioDeprecationWarning
 warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
 # todo add logging
-# todo: add cli? make runtime an parameter
+# todo: add cli? make runtime a parameter
+# todo: create a command line display, time remaining, number of records...
 
 class GetMastodonData:
     def __init__(self, fail_fn='checkpoint.txt', server='mastodon.social'):
