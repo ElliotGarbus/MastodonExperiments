@@ -99,7 +99,7 @@ class GetMastodonData:
 
 
 async def main():
-    hours = 3  # run time in hours
+    hours = 0.01  # run time in hours
     try:
         server = sys.argv[1]
         gmd = GetMastodonData(server=server)
@@ -124,11 +124,11 @@ async def main():
                 if elapsed_time <= 10:
                     await trio.sleep(12 - elapsed_time)  # add some buffer to the time
                 print(f'wait complete, Number of invalid user records: {gmd.fail_count}, Number of Network timeouts {gmd.time_outs}')
-            if cancel_scope.cancelled_caught:
-                print('Execution Completed Normally, scheduled execution time has expired')
-                print(f'Number of invalid user records: {gmd.fail_count}, Number of Network timeouts {gmd.time_outs}')
-            else:
-                print('Exit with unhandled exception')
+    if cancel_scope.cancelled_caught:
+        print('Execution Completed Normally, scheduled execution time has expired')
+        print(f'Number of invalid user records: {gmd.fail_count}, Number of Network timeouts {gmd.time_outs}')
+    else:
+        print('Exit with unhandled exception')
 
 
 trio.run(main)
