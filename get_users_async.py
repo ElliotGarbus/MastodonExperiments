@@ -42,8 +42,8 @@ class GetMastodonData:
             reset_time = datetime.fromisoformat(rate_limit_reset.replace('Z', '+00:00'))
             self.last_reset_time = max(self.last_reset_time, reset_time)
             if rate_limit_remaining == '0':
-                print('Rate Limiting timeout reached, waiting 5 minutes for reset ')
-                trio.sleep(300) # Wait for rate limiting to reset
+                print('Rate Limiting timeout reached, waiting 30 seconds for reset ')
+                trio.sleep(30) # Wait for rate limiting to reset, Should be enough for the count to roll-over
 
         except KeyError as e:
             print(f'{e} : {d}')
