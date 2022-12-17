@@ -5,7 +5,7 @@ import webbrowser
 
 
 users = []
-path = Path('mastodon_users.txt')
+path = Path('hachyderm_io_users.txt')
 with open(path) as f:
     for line in f:
         d = json.loads(line)
