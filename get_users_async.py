@@ -14,7 +14,8 @@ warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
 class GetMastodonData:
     def __init__(self, fail_fn='checkpoint.txt', server='mastodon.social'):
-        self.data_fn = Path(server.replace('.', '_') + '_users.txt')
+        dt = datetime.now().isoformat(timespec='seconds').replace(':', '_')
+        self.data_fn = Path(server.replace('.', '_') + '_' + dt + '.txt')
         print(f'Data will be saved to: {self.data_fn}')
         self.data_fn.unlink(missing_ok=True)
         self.fail_fn = Path(fail_fn)  # urls that do not successfully return data
@@ -109,7 +110,7 @@ class GetMastodonData:
 
 async def main(server, hours):
     gmd = GetMastodonData(server=server)
-    users = 700_000 # gmd.number_of_users() # number of call sets for just under 3 hours.
+    users = gmd.number_of_users()
     print(f'User count: {users}')
     s_req = 10  # number of simultaneous requests
     with trio.move_on_after(60 * 60 * hours) as cancel_scope:
