@@ -99,7 +99,7 @@ class GetMastodonData:
 
 
 async def main():
-    hours = 0.01  # run time in hours
+    hours = 3  # run time in hours
     try:
         server = sys.argv[1]
         gmd = GetMastodonData(server=server)
