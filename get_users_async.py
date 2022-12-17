@@ -124,11 +124,11 @@ async def main():
                 if elapsed_time <= 10:
                     await trio.sleep(12 - elapsed_time)  # add some buffer to the time
                 print(f'wait complete, Number of invalid user records: {gmd.fail_count}, Number of Network timeouts {gmd.time_outs}')
-        if cancel_scope.cancelled_caught:
-            print('Execution Completed Normally, scheduled execution time has expired')
-            print(f'Number of invalid user records: {gmd.fail_count}, Number of Network timeouts {gmd.time_outs}')
-        else:
-            print('Exit with unhandled exception')
+            if cancel_scope.cancelled_caught:
+                print('Execution Completed Normally, scheduled execution time has expired')
+                print(f'Number of invalid user records: {gmd.fail_count}, Number of Network timeouts {gmd.time_outs}')
+            else:
+                print('Exit with unhandled exception')
 
 
 trio.run(main)
