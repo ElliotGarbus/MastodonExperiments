@@ -110,8 +110,7 @@ class GetMastodonData:
 
 async def main(server, hours):
     gmd = GetMastodonData(server=server)
-    users = gmd.number_of_users()
-    print(f'User count: {users}')
+    print(f'User count: {gmd.number_of_users()}')
     s_req = 10  # number of simultaneous requests
     with trio.move_on_after(60 * 60 * hours) as cancel_scope:
         while not cancel_scope.cancelled_caught:
@@ -120,7 +119,6 @@ async def main(server, hours):
                     start = trio.current_time()
                     for _ in range(s_req):  # 10 requests at a time, works without server failures on mastodon.social
                         nursery.start_soon(gmd.get_data)
-                        # users -= 80  # get 80 users per call -- due to pagination bug no connection to user count
                     print(f'{s_req} Requests have been scheduled...')
                 print(f'Competed successfully! Seconds remaining to limit reset: {gmd.seconds_remaining}')
                 # target 300 call/5min, 1 call/sec... add wait to slow down to that rate
