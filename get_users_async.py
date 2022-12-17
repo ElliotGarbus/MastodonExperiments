@@ -1,7 +1,7 @@
+import argparse
 from datetime import datetime, timezone
 import json
 from pathlib import Path
-import sys
 import warnings
 
 import httpx
@@ -17,7 +17,7 @@ warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 class GetMastodonData:
     def __init__(self, fail_fn='checkpoint.txt', server='mastodon.social'):
         self.data_fn = Path(server.replace('.', '_') + '_users.txt')
-        print(self.data_fn)
+        print(f'Data will be saved to: {self.data_fn}')
         self.data_fn.unlink(missing_ok=True)
         self.fail_fn = Path(fail_fn)  # urls that do not successfully return data
         self.fail_fn.unlink(missing_ok=True)
@@ -98,13 +98,8 @@ class GetMastodonData:
                 f.write(url)
 
 
-async def main():
-    hours = 3  # run time in hours
-    try:
-        server = sys.argv[1]
-        gmd = GetMastodonData(server=server)
-    except IndexError:
-        gmd = GetMastodonData()
+async def main(server, hours):
+    gmd = GetMastodonData(server=server)
     users = 700_000 # gmd.number_of_users() # number of call sets for just under 3 hours.
     print(f'User count: {users}')
     s_req = 10  # number of simultaneous requests
@@ -128,5 +123,12 @@ async def main():
         print('Execution Completed Normally, scheduled execution time has expired')
         print(f'Number of invalid user records: {gmd.fail_count}, Number of Network timeouts {gmd.time_outs}')
 
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('server', help='Name of the server to search, example: "mastodon.social"')
+    parser.add_argument('-t', '--time', help="execution time in hours, defaults to 3 hours", type=float)
+    args = parser.parse_args()
+    s = args.server
+    h = 3 if not args.time else args.time
 
-trio.run(main)
+    trio.run(main, s, h)
