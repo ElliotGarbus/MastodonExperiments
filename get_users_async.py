@@ -108,6 +108,7 @@ async def main():
     users = 700_000 # gmd.number_of_users() # number of call sets for just under 3 hours.
     print(f'User count: {users}')
     s_req = 10  # number of simultaneous requests
+    # noinspection PyUnusedLocal
     with trio.move_on_after(60 * 60 * hours) as cancel_scope:
         while True:
             for _ in range(30): # 30 x 10 = 300 calls
@@ -124,6 +125,7 @@ async def main():
                 if elapsed_time <= 10:
                     await trio.sleep(12 - elapsed_time)  # add some buffer to the time
                 print(f'wait complete, Number of invalid user records: {gmd.fail_count}, Number of Network timeouts {gmd.time_outs}')
+    # noinspection PyUnreachableCode
     if cancel_scope.cancelled_caught:
         print('Execution Completed Normally, scheduled execution time has expired')
         print(f'Number of invalid user records: {gmd.fail_count}, Number of Network timeouts {gmd.time_outs}')
