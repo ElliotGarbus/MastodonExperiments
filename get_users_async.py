@@ -132,7 +132,10 @@ async def main(server, hours):
         print(gmd.stats)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+    description = 'Uses the Mastodon Directory API, to save users to a file. ' \
+                  'The file name contains the server name and date & time. '\
+                  'Each line is a dictionary of user data (JSON).'
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument('server', help='Name of the server to search, example: "mastodon.social"')
     parser.add_argument('-t', '--time', help="execution time in hours, defaults to 3 hours", type=float)
     args = parser.parse_args()
