@@ -1,23 +1,18 @@
-from pathlib import Path
+import argparse
 import json
-from pprint import pprint
 import webbrowser
-import sys
 
+
+parser = argparse.ArgumentParser(description='Review the 100 most followed users, 10 at a time.')
+parser.add_argument('filename', help='file of mastodon directory records')
+args = parser.parse_args()
 
 users = []
-try:
-    file = sys.argv[1]
-except IndexError:
-    raise ValueError('No file argument')
-
-path = Path(file)
-with open(path) as f:
+with open(args.filename) as f:
     for line in f:
         d = json.loads(line)
         users.append({'url': d['url'], 'followers': int(d['followers_count'])})
 top_100 = sorted(users, key=lambda x: x['followers'], reverse=True)[:100]
-pprint(top_100)
 
 counter = 0
 for user in top_100:
