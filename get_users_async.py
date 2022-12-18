@@ -137,9 +137,7 @@ if __name__ == '__main__':
                   'Each line is a dictionary of user data (JSON).'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('server', help='Name of the server to search, example: "mastodon.social"')
-    parser.add_argument('-t', '--time', help="execution time in hours, defaults to 3 hours", type=float)
+    parser.add_argument('-t', '--time', default=3,  help="execution time in hours, defaults to 3 hours", type=float)
     args = parser.parse_args()
-    s = args.server
-    h = 3 if not args.time else args.time
 
-    trio.run(main, s, h)
+    trio.run(main, args.server, args.time)
