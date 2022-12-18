@@ -3,7 +3,7 @@ import json
 import webbrowser
 
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description='Review the 100 most followed users, 10 at a time.')
 parser.add_argument('filename', help='file of mastodon directory records')
 args = parser.parse_args()
 
