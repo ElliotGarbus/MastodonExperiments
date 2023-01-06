@@ -1,7 +1,9 @@
 import argparse
 from datetime import datetime, timezone
 import json
+import logging
 from pathlib import Path
+import sys
 import warnings
 
 import httpx
@@ -15,12 +17,16 @@ warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 class GetMastodonData:
     def __init__(self,  server='mastodon.social', local='true'):
         # local is part of the url, users local to the server 'true' or 'false'
-        dt = datetime.now().isoformat(timespec='seconds').replace(':', '_')  # part of fine name
         save_dir = Path('results')
         save_dir.mkdir(exist_ok=True)
-        self.data_fn = save_dir / (server.replace('.', '_') + '_' + dt + '.txt')
+        dt = datetime.now().isoformat(timespec='seconds').replace(':', '_')  # part of fine name
+        fn = server.replace('.', '_') + '_' + dt + '.txt'
+        self.data_fn = save_dir / fn
         print(f'Data will be saved to: {self.data_fn}')
-        self.data_fn.unlink(missing_ok=True)
+        log_dir = Path('log')
+        log_dir.mkdir(exist_ok=True)
+        log_fn = log_dir / fn
+        logging.basicConfig(filename=log_fn, encoding='utf-8', level=logging.DEBUG)
         self.url_g = (f"https://{server}/api/v1/directory?local={local}?limit=80?offset={i * 80}" \
                       for i in range(0, 100_000))
         self.server = server
@@ -64,6 +70,9 @@ class GetMastodonData:
             url = next(self.url_g)
             try:
                 response = await client.get(url, timeout=180)  # allow three minutes for a get() to complete
+                if response.status_code != httpx.codes.OK:
+                    logging.critical(f'Status code not OK, Exiting') # todo: 404 and 501 vs others...
+                    sys.exit(0)
                 self._set_last_reset_time(response)
                 self.save(response, url)
             except (httpx.TimeoutException, httpx.ConnectError):
@@ -84,6 +93,11 @@ class GetMastodonData:
             print('Invalid JSON in response, Response is ignored')
             self._stats['json errors'] += 1
             return
+        if users == 'unsupported':
+            # Log error and exit
+            logging.error(f'Directory call unsupported {url}')
+            sys.exit(0)  # exit and allow other processes to continue
+
         for user in users:
             self._stats['total records'] += 1
             # with open('all.txt', 'a') as f:  # save all data, for debug
@@ -97,12 +111,10 @@ class GetMastodonData:
                 # with open(self.fail_fn, 'a') as ffn:
                 #     ffn.write(f'{url}\n')
                 continue
-            try:                                    # loforo.com was throwing errors here...
-                if user['url'] in self.unique_url:
-                    print(f"user not unique: {user['url']}")
-                    continue
-            except TypeError:
+            if user['url'] in self.unique_url:
+                print(f"user not unique: {user['url']}")
                 continue
+
             self.unique_url.add(user['url'])
 
             with open(self.data_fn, 'a') as f:  # only save unique data
@@ -116,7 +128,7 @@ class GetMastodonData:
 
 async def main(server, hours):
     gmd = GetMastodonData(server=server)
-    print(f'User count: {gmd.number_of_users()}')
+    # print(f'User count: {gmd.number_of_users()}')  # unused, was for looping over user coung
     s_req = 10  # number of simultaneous requests
     with trio.move_on_after(60 * 60 * hours) as cancel_scope:
         while not cancel_scope.cancelled_caught:
