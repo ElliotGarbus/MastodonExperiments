@@ -1,5 +1,6 @@
 # from_servers.py - kick of  a number of processes to pull data from multiple servers
 # todo add ui?
+# todo limit total number of concurrent processes
 
 import argparse
 import trio
@@ -8,7 +9,7 @@ from subprocess import DEVNULL
 from get_instances import get_instances
 
 servers = get_instances(100)
-servers.remove('loforo.com')  # this server throws lots of errors... pulled it out for now
+servers.remove('loforo.com')  # directory call is unsupported
 print(servers)
 
 async def launch_process(server, hours):
