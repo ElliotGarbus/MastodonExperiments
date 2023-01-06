@@ -97,8 +97,11 @@ class GetMastodonData:
                 # with open(self.fail_fn, 'a') as ffn:
                 #     ffn.write(f'{url}\n')
                 continue
-            if user['url'] in self.unique_url:
-                print(f"user not unique: {user['url']}")
+            try:
+                if user['url'] in self.unique_url:
+                    print(f"user not unique: {user['url']}")
+                    continue
+            except TypeError:
                 continue
             self.unique_url.add(user['url'])
 

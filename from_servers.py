@@ -5,8 +5,11 @@ import argparse
 import trio
 from subprocess import DEVNULL
 
+from get_instances import get_instances
 
-servers = ['mastodon.social', 'mas.to', 'mastodon.lol' ,'fosstodon.org']
+servers = get_instances(100)
+# servers.remove('loforo.com')  # this server throws lots of erros...
+print(servers)
 
 async def launch_process(server, hours):
     await trio.run_process(['python', '.\get_users_async.py', server, '-t', f'{hours}'],
