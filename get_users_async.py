@@ -72,7 +72,7 @@ class GetMastodonData:
                 print(f'Network Exception, total: {self._stats["network errors"]}')
 
     def number_of_users(self):
-        response = httpx.get(f"https://{self.server}/api/v1/instance")
+        response = httpx.get(f"https://{self.server}/api/v1/instance", timeout=180)  # extended timeout to reduce errors
         instance = response.json()
         self._set_last_reset_time(response)
         return int(instance['stats']['user_count'])
