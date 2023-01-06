@@ -8,7 +8,7 @@ from subprocess import DEVNULL
 from get_instances import get_instances
 
 servers = get_instances(100)
-# servers.remove('loforo.com')  # this server throws lots of erros...
+servers.remove('loforo.com')  # this server throws lots of errors... pulled it out for now
 print(servers)
 
 async def launch_process(server, hours):
