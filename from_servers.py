@@ -1,7 +1,10 @@
 # from_servers.py - kick of  a number of processes to pull data from multiple servers
+# todo add ui?
+
 import argparse
 import trio
 from subprocess import DEVNULL
+
 
 servers = ['mastodon.social', 'mas.to', 'mastodon.lol' ,'fosstodon.org']
 
@@ -12,7 +15,7 @@ async def launch_process(server, hours):
 async def main(duration):
     async with trio.open_nursery() as nursery:
         for s in servers:
-            print(f'Directory scan {s} for {duration} hours')
+            print(f'Scheduling directory scan of {s} for {duration} hours')
             nursery.start_soon(launch_process, s, duration)
     print('All Done!')
 
