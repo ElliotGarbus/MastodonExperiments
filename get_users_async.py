@@ -97,7 +97,7 @@ class GetMastodonData:
                 # with open(self.fail_fn, 'a') as ffn:
                 #     ffn.write(f'{url}\n')
                 continue
-            try:
+            try:                                    # loforo.com was throwing errors here...
                 if user['url'] in self.unique_url:
                     print(f"user not unique: {user['url']}")
                     continue
