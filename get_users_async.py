@@ -13,14 +13,15 @@ warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
 
 class GetMastodonData:
-    def __init__(self, fail_fn='checkpoint.txt', server='mastodon.social'):
-        dt = datetime.now().isoformat(timespec='seconds').replace(':', '_')
-        self.data_fn = Path(server.replace('.', '_') + '_' + dt + '.txt')
+    def __init__(self,  server='mastodon.social', local='true'):
+        dt = datetime.now().isoformat(timespec='seconds').replace(':', '_')  # part of fine name
+        save_dir = Path('results')
+        save_dir.mkdir(exist_ok=True)
+        self.data_fn = save_dir / (server.replace('.', '_') + '_' + dt + '.txt')
         print(f'Data will be saved to: {self.data_fn}')
         self.data_fn.unlink(missing_ok=True)
-        self.fail_fn = Path(fail_fn)  # urls that do not successfully return data
-        self.fail_fn.unlink(missing_ok=True)
-        self.url_g = (f"https://{server}/api/v1/directory?limit=80?offset={i * 80}" for i in range(0, 100_000))
+        self.url_g = (f"https://{server}/api/v1/directory?local={local}?limit=80?offset={i * 80}" \
+                      for i in range(0, 100_000))
         self.server = server
         self.last_reset_time = datetime.now(timezone.utc)
         self.unique_url = set()
@@ -90,22 +91,23 @@ class GetMastodonData:
             if user == 'error':
                 self._stats['invalid user record'] += 1
                 # print(f'Error detected: {user}')
-                with open(self.fail_fn, 'a') as ffn:
-                    ffn.write(f'{url}\n')
+                # this was here to capture failed requests to replay them, given the issues with the api,
+                # and the redudant data - this is commented out
+                # with open(self.fail_fn, 'a') as ffn:
+                #     ffn.write(f'{url}\n')
                 continue
-
             if user['url'] in self.unique_url:
                 print(f"user not unique: {user['url']}")
                 continue
-
             self.unique_url.add(user['url'])
 
-            with open(self.data_fn, 'a') as f:
+            with open(self.data_fn, 'a') as f:  # only save unique data
                 json.dump(user, f)
                 f.write('\n')
                 print(f"{user['url']} followers: {user['followers_count']}")
-            with open('last_url.txt', 'w') as f:  # used to capture the last url - used to resume a search (not used)
-                f.write(url)
+            # used to capture the last url - used to resume a search (not used)
+            # with open('last_url.txt', 'w') as f:
+            #     f.write(url)
 
 
 async def main(server, hours):
