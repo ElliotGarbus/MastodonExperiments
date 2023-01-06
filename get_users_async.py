@@ -14,6 +14,7 @@ warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
 class GetMastodonData:
     def __init__(self,  server='mastodon.social', local='true'):
+        # local is part of the url, users local to the server 'true' or 'false'
         dt = datetime.now().isoformat(timespec='seconds').replace(':', '_')  # part of fine name
         save_dir = Path('results')
         save_dir.mkdir(exist_ok=True)
