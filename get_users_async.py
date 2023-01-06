@@ -26,7 +26,7 @@ class GetMastodonData:
         log_dir = Path('log')
         log_dir.mkdir(exist_ok=True)
         log_fn = log_dir / fn
-        logging.basicConfig(filename=log_fn, encoding='utf-8', level=logging.DEBUG)
+        logging.basicConfig(filename=log_fn, encoding='utf-8', level=logging.INFO)
         self.url_g = (f"https://{server}/api/v1/directory?local={local}?limit=80?offset={i * 80}" \
                       for i in range(0, 100_000))
         self.server = server
@@ -48,7 +48,7 @@ class GetMastodonData:
         summary += f'Unique urls: {len(self.unique_url)}'
         return summary
 
-    def _set_last_reset_time(self, response):
+    async def _set_last_reset_time(self, response):
         d = dict(response.headers)
         try:
             rate_limit_reset = d['x-ratelimit-reset']  # time until the rate limit resets
@@ -58,7 +58,8 @@ class GetMastodonData:
             self.last_reset_time = max(self.last_reset_time, reset_time)
             if rate_limit_remaining == '0':
                 print('Rate Limiting timeout reached, waiting for reset ')
-                trio.sleep(30) # Wait for rate limiting to reset, Should be enough for the count to roll-over
+                logging.info('Rate limit reached')
+                await trio.sleep(30) # Wait for rate limiting to reset, Should be enough for the count to roll-over
 
         except KeyError as e:
             self._stats['bad headers'] += 1
@@ -69,21 +70,24 @@ class GetMastodonData:
         async with httpx.AsyncClient() as client:
             url = next(self.url_g)
             try:
-                response = await client.get(url, timeout=180)  # allow three minutes for a get() to complete
-                if response.status_code != httpx.codes.OK:
-                    logging.critical(f'Status code not OK, Exiting') # todo: 404 and 501 vs others...
-                    sys.exit(0)
-                self._set_last_reset_time(response)
-                self.save(response, url)
+                r = await client.get(url, timeout=180)  # allow three minutes for a get() to complete
+                r.raise_for_status()
+                await self._set_last_reset_time(r)
+                self.save(r, url)
+            except httpx.HTTPStatusError as e:
+                logging.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
+                sys.exit(0)
             except (httpx.TimeoutException, httpx.ConnectError):
                 # data is sparse and repetitive - just count timeout errors
                 self._stats['network errors'] += 1
                 print(f'Network Exception, total: {self._stats["network errors"]}')
 
-    def number_of_users(self):
+
+    async def number_of_users(self):
+        # not currently being called
         response = httpx.get(f"https://{self.server}/api/v1/instance", timeout=180)  # extended timeout to reduce errors
         instance = response.json()
-        self._set_last_reset_time(response)
+        await self._set_last_reset_time(response)
         return int(instance['stats']['user_count'])
 
     def save(self, r, url):
@@ -93,11 +97,6 @@ class GetMastodonData:
             print('Invalid JSON in response, Response is ignored')
             self._stats['json errors'] += 1
             return
-        if users == 'unsupported':
-            # Log error and exit
-            logging.error(f'Directory call unsupported {url}')
-            sys.exit(0)  # exit and allow other processes to continue
-
         for user in users:
             self._stats['total records'] += 1
             # with open('all.txt', 'a') as f:  # save all data, for debug
@@ -128,7 +127,7 @@ class GetMastodonData:
 
 async def main(server, hours):
     gmd = GetMastodonData(server=server)
-    # print(f'User count: {gmd.number_of_users()}')  # unused, was for looping over user coung
+    # print(f'User count: {gmd.number_of_users()}')  # unused, was for looping over user count
     s_req = 10  # number of simultaneous requests
     with trio.move_on_after(60 * 60 * hours) as cancel_scope:
         while not cancel_scope.cancelled_caught:
@@ -148,6 +147,7 @@ async def main(server, hours):
     if cancel_scope.cancelled_caught:
         print('Execution Completed Normally, scheduled execution time has expired')
         print(gmd.stats)
+        logging.info(gmd.stats)
 
 if __name__ == '__main__':
     description = 'Uses the Mastodon Directory API, to save users to a file. ' \
