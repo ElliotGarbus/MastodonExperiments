@@ -26,7 +26,7 @@ class GetMastodonData:
         log_dir = Path('log')
         log_dir.mkdir(exist_ok=True)
         log_fn = log_dir / fn
-        logging.basicConfig(filename=log_fn, encoding='utf-8', level=logging.INFO)
+        logging.basicConfig(filename=log_fn, encoding='utf-8', level=logging.DEBUG)
         self.url_g = (f"https://{server}/api/v1/directory?local={local}?limit=80?offset={i * 80}" \
                       for i in range(0, 100_000))
         self.server = server
