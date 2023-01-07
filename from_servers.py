@@ -1,26 +1,35 @@
 # from_servers.py - kick of  a number of processes to pull data from multiple servers
 # todo add ui?
-# todo limit total number of concurrent processes
-
 import argparse
-import trio
+from itertools import islice
 from subprocess import DEVNULL
+
+import trio
 
 from get_instances import get_instances
 
-servers = get_instances(100)
-servers.remove('loforo.com')  # directory call is unsupported
-print(servers)
+def batched(iterable, n):
+    "Batch data into tuples of length n. The last batch may be shorter."
+    # batched('ABCDEFG', 3) --> ABC DEF G
+    if n < 1:
+        raise ValueError('n must be at least one')
+    it = iter(iterable)
+    while batch := tuple(islice(it, n)):
+        yield batch
+
 
 async def launch_process(server, hours):
     await trio.run_process(['python', '.\get_users_async.py', server, '-t', f'{hours}'],
                            shell=True, stdout=DEVNULL)
 
 async def main(duration):
-    async with trio.open_nursery() as nursery:
-        for s in servers:
-            print(f'Scheduling directory scan of {s} for {duration} hours')
-            nursery.start_soon(launch_process, s, duration)
+    servers = get_instances(300) # 0 for all servers
+    servers.remove('loforo.com')  # directory call is unsupported
+    for batch in batched(servers, 100):  # process 100 at a time - this can be adjusted for platform
+        async with trio.open_nursery() as nursery:
+            for s in batch:
+                print(f'Scheduling directory scan of {s} for {duration} hours')
+                nursery.start_soon(launch_process, s, duration)
     print('All Done!')
 
 if __name__ == '__main__':
