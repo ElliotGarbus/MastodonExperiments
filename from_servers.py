@@ -23,7 +23,8 @@ async def launch_process(server, hours):
                            shell=True, stdout=DEVNULL)
 
 async def main(duration):
-    servers = get_instances(300) # 0 for all servers
+    servers = get_instances(0) # 0 for all servers
+    print(f'{len(servers)} servers selected')
     servers.remove('loforo.com')  # directory call is unsupported
     for batch in batched(servers, 100):  # process 100 at a time - this can be adjusted for platform
         async with trio.open_nursery() as nursery:
