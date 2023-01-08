@@ -34,18 +34,17 @@ def save_users(users, server, active_users, all_users):
         logging.error(f'JSON error {e}')
         return
     unique_url = set()
-    for user in users:  # todo: put the loop inside the file context
-        # print(user)
-        if user['url'] in unique_url:
-            continue
-        unique_url.add(user['url'])
-        with open('users.txt', 'a') as f:  # only save unique data
+    with open('users.txt', 'a') as f:  # only save unique data
+        for user in users:
+            # print(user)
+            if user['url'] in unique_url:
+                continue
+            unique_url.add(user['url'])
             json.dump(user, f)
             f.write('\n')
     print(f'saved {server}')
     logging.info(f'{server} received {len(users)} records, {len(unique_url)} unique records;'
                  f'of users: {all_users}, number of active Users: {active_users}')
-
 
 async def get_users(instance):
     server = instance['name']
@@ -71,7 +70,7 @@ async def main():
     users_fn = Path('users.txt')
     users_fn.unlink(missing_ok=True)
 
-    logging.basicConfig(filename=log_fn, encoding='utf-8', level=logging.DEBUG)
+    logging.basicConfig(filename=log_fn, encoding='utf-8', level=logging.INFO)
     print('getting instances')
     instances = get_instances(0)  # 0 is all instances
     start = time.perf_counter()
