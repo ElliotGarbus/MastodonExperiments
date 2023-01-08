@@ -125,11 +125,11 @@ class GetMastodonData:
             #     f.write(url)
 
 
-async def main(server, hours):
+async def main(server, min):
     gmd = GetMastodonData(server=server)
     # print(f'User count: {gmd.number_of_users()}')  # unused, was for looping over user count
     s_req = 10  # number of simultaneous requests
-    with trio.move_on_after(60 * 60 * hours) as cancel_scope:
+    with trio.move_on_after(60 * min) as cancel_scope:
         while not cancel_scope.cancelled_caught:
             for _ in range(30): # 30 x 10 = 300 calls
                 async with trio.open_nursery() as nursery:
@@ -155,7 +155,7 @@ if __name__ == '__main__':
                   'Each line is a dictionary of user data (JSON).'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('server', help='Name of the server to search, example: "mastodon.social"')
-    parser.add_argument('-t', '--time', default=3,  help="execution time in hours, defaults to 3 hours", type=float)
+    parser.add_argument('-t', '--time', default=5,  help="execution time in minutes, defaults to 5 minutes", type=float)
     args = parser.parse_args()
 
     trio.run(main, args.server, args.time)
