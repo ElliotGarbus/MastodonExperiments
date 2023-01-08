@@ -80,6 +80,6 @@ async def main():
             nursery.start_soon(get_users, mi)
     print('Done!')
     t = time.perf_counter() - start
-    print(f'{t} seconds for {len(instances)} servers; {t/len(instances)} sec/instance')
+    print(f'{t:0.1f} seconds for {len(instances)} servers; {t/len(instances):0.1f} sec/instance')
 
 trio.run(main)
