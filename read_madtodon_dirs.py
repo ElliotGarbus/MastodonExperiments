@@ -31,7 +31,7 @@ def save_users(users, server, active_users, all_users):
     try:
         users = users.json()
     except json.decoder.JSONDecodeError as e:
-        logging.error(f'JSON error {e}')
+        logging.error(f'JSON error {e} \n {users.text}')
         return
     unique_url = set()
     with open('users.txt', 'a') as f:  # only save unique data
@@ -68,7 +68,7 @@ async def main():
     log_fn = Path('log.txt')
     log_fn.unlink(missing_ok=True)
     users_fn = Path('users.txt')
-    users_fn.unlink(missing_ok=True)
+    users_fn.unlink(missing_ok=True)  # todo: refactor to put the filenames in one place
 
     logging.basicConfig(filename=log_fn, encoding='utf-8', level=logging.INFO)
     print('getting instances')
@@ -80,6 +80,6 @@ async def main():
             nursery.start_soon(get_users, mi)
     print('Done!')
     t = time.perf_counter() - start
-    print(f'{t:0.1f} seconds for {len(instances)} servers; {t/len(instances):0.1f} sec/instance')
+    print(f'{t:0.1f} seconds for {len(instances)} servers; {t/len(instances):0.3f} sec/instance')
 
 trio.run(main)
