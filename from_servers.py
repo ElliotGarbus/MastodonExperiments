@@ -23,13 +23,13 @@ async def launch_process(server, hours):
                            shell=True, stdout=DEVNULL)
 
 async def main(duration):
-    servers = get_instances(0) # 0 for all servers
+    servers = get_instances(300) # 0 for all servers
     print(f'{len(servers)} servers selected')
     servers.remove('loforo.com')  # directory call is unsupported
     for batch in batched(servers, 100):  # process 100 at a time - this can be adjusted for platform
         async with trio.open_nursery() as nursery:
             for s in batch:
-                print(f'Scheduling directory scan of {s} for {duration} hours')
+                print(f'Scheduling directory scan of {s} for {duration} minutes')
                 nursery.start_soon(launch_process, s, duration)
     print('All Done!')
 
@@ -38,7 +38,7 @@ if __name__ == '__main__':
                   'get_users_async.py is used to collect the data '\
                   'resulting data files are stored in the results directory'
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('-t', '--time', default=3,  help="execution time in hours, defaults to 3 hours", type=float)
+    parser.add_argument('-t', '--time', default=5,  help="execution time in minutes, defaults to 5 minutes", type=float)
     args = parser.parse_args()
     trio.run(main, args.time)
 
