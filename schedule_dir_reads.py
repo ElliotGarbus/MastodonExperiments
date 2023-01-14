@@ -46,7 +46,7 @@ class MastodonInstance:
             return 10 * 60
         elif self.all_users > 48_000:
             return 16 * 60
-        else:
+        else:                       # to do... add more categories...
             return 60 * 60
 
     def save(self, users):
@@ -71,7 +71,7 @@ class MastodonInstance:
         url = f"https://{self.name}/api/v1/directory"
         params = {'local': True, 'limit': 40 }
         async with httpx.AsyncClient() as client:
-            while True:  # todo add a time limit here...
+            while True:                                 # todo add a time limit here...
                 print(f'getting {self.name}')
                 try:
                     r = await client.get(url, params=params, timeout=180)  # allow three minutes
