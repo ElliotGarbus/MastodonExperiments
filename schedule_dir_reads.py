@@ -49,8 +49,6 @@ class MastodonInstance:
         else:
             return 60 * 60
 
-
-
     def save(self, users):
         try:
             users = users.json()
