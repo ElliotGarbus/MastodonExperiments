@@ -22,7 +22,7 @@ mi_info = {'name':'app_name',
 def get_instances(n):
     # returns a list of servers, uses instances.social api  https://instances.social/api/doc/
     header = {'Authorization': 'Bearer ' + mi_info['token'] }
-    params = {'count': f'{n}', 'include_down': 'false', 'language': 'en', 'sort_by': 'users', 'sort_order': 'desc'}
+    params = {'count': n, 'include_down': 'false', 'language': 'en', 'sort_by': 'users', 'sort_order': 'desc'}
     r = httpx.get('https://instances.social/api/1.0/instances/list',headers=header, params=params)
     d = r.json()
     return d['instances']  # keys of interest: 'name', 'users', 'active_users'
@@ -60,7 +60,7 @@ async def get_users(instance):
             save_users(r, server, active_users, users)
         except httpx.HTTPStatusError as e:
             logging.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
-        except (httpx.TimeoutException, httpx.ConnectError) as e:
+        except (httpx.TimeoutException, httpx.ConnectError, httpx.RemoteProtocolError) as e:
             logging.error(f'Error {e} on {url}')
 
 
@@ -72,7 +72,7 @@ async def main():
 
     logging.basicConfig(filename=log_fn, encoding='utf-8', level=logging.INFO)
     print('getting instances')
-    instances = get_instances(0)  # 0 is all instances
+    instances = get_instances(10)  # 0 is all instances
     start = time.perf_counter()
     print('instances received, schedule get_users')
     async with trio.open_nursery() as nursery:
