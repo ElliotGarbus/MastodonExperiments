@@ -74,7 +74,7 @@ class GetMastodonData:
                 self.save(r)
             except httpx.HTTPStatusError as e:
                 logging.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
-                if e.response.status_code in [401, 404, 502, 504]:
+                if e.response.status_code in [401, 404, 500, 502, 504]:
                     sys.exit(0)
             except (httpx.TimeoutException, httpx.ConnectTimeout,
                     httpx.RemoteProtocolError, httpx.ConnectError) as e:
