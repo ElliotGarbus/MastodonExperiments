@@ -74,7 +74,7 @@ class GetMastodonData:
                 self.save(r)
             except httpx.HTTPStatusError as e:
                 logging.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
-                if e.response.status_code in [401, 404]: # todo are there more exit conditions?
+                if e.response.status_code in [401, 404, 502, 504]:
                     sys.exit(0)
             except (httpx.TimeoutException, httpx.ConnectTimeout, httpx.ConnectError) as e:
                 self._stats['network errors'] += 1
@@ -93,13 +93,11 @@ class GetMastodonData:
     def save(self, r):
         try:
             users = r.json()
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
             print('Invalid JSON in response, Response is ignored')
+            logging.error(f'JSON error {e}')
             self._stats['json errors'] += 1
             return
-        if not users:
-            logging.info('No data returned')
-            self.no_data_count += 1
 
         with open(self.data_fn, 'a') as f:  # only save unique data
             for user in users:
@@ -115,7 +113,10 @@ class GetMastodonData:
                 f.write('\n')
                 print(f"{user['url']} followers: {user['followers_count']}")
 
-        # if no more data remains, exit early
+        if not users:
+            logging.info('No data returned')
+            self.no_data_count += 1
+        # if no more data remains, and no pending tasks, exit early
         if self.no_data_count and len(self.nursery.child_tasks) == 1:
             logging.info(self.stats)
             sys.exit(0)
