@@ -99,6 +99,7 @@ class GetMastodonData:
             logging.info('No data remaining')
             self.no_data_count += 1
             if self.no_data_count >= 10:  # need to wait to ensure pending request with data return
+                logging.info(self.stats)
                 sys.exit(0)
         for user in users:
             self._stats['total records'] += 1
