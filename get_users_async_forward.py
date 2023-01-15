@@ -23,12 +23,13 @@ class GetMastodonData:
         self.data_fn = save_dir / fn
         print(f'Data will be saved to: {self.data_fn}')
         self.url = f"https://{server}/api/v1/directory"
-        self.params_g = ({'order': 'active', 'local': True, 'limit': 40, 'offset': i} for i in range(0, 50_000, 40))
+        self.params_g = ({'order': 'active', 'local': True, 'limit': 40, 'offset': i} for i in range(0, 100_000, 40))
         self.server = server
         self.last_reset_time = datetime.now(timezone.utc)
         self.unique_url = set()
         self._stats = {'json errors': 0, 'network errors': 0, 'bad headers': 0, 'invalid user record': 0,
                        'total records': 0}
+        self.no_data_count = 0
 
     @property
     def seconds_remaining(self):
@@ -94,6 +95,11 @@ class GetMastodonData:
             print('Invalid JSON in response, Response is ignored')
             self._stats['json errors'] += 1
             return
+        if not users:
+            logging.info('No data remaining')
+            self.no_data_count += 1
+            if self.no_data_count >= 10:  # need to wait to ensure pending request with data return
+                sys.exit(0)
         for user in users:
             self._stats['total records'] += 1
             # with open('all.txt', 'a') as f:  # save all data, for debug
@@ -117,9 +123,6 @@ class GetMastodonData:
                 json.dump(user, f)
                 f.write('\n')
                 print(f"{user['url']} followers: {user['followers_count']}")
-            # used to capture the last url - used to resume a search (not used)
-            # with open('last_url.txt', 'w') as f:
-            #     f.write(url)
 
 
 async def main(server, min):
