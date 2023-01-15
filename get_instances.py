@@ -16,7 +16,7 @@ def get_instances(n):
     # returns a list of servers
     header = {'Authorization': 'Bearer ' + mi_info['token'] }
     params = {'count': f'{n}', 'include_down': 'false', 'language': 'en', 'sort_by': 'users', 'sort_order': 'desc'}
-    r = httpx.get('https://instances.social/api/1.0/instances/list',headers=header, params=params)
+    r = httpx.get('https://instances.social/api/1.0/instances/list',headers=header, params=params, timeout=100)
     d = r.json()
     return [instance['name'] for instance in d['instances']]
 

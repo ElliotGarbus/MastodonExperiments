@@ -34,7 +34,7 @@ def save_users(users, server, active_users, all_users):
         logging.error(f'JSON error {e} \n {users.text}')
         return
     unique_url = set()
-    with open('users.txt', 'a') as f:  # only save unique data
+    with open('../users.txt', 'a') as f:  # only save unique data
         for user in users:
             # print(user)
             if user['url'] in unique_url:
@@ -65,9 +65,9 @@ async def get_users(instance):
 
 
 async def main():
-    log_fn = Path('log.txt')
+    log_fn = Path('../log.txt')
     log_fn.unlink(missing_ok=True)
-    users_fn = Path('users.txt')
+    users_fn = Path('../users.txt')
     users_fn.unlink(missing_ok=True)  # todo: refactor to put the filenames in one place
 
     logging.basicConfig(filename=log_fn, encoding='utf-8', level=logging.INFO)
