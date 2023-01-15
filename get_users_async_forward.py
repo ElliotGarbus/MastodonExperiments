@@ -30,6 +30,7 @@ class GetMastodonData:
         self._stats = {'json errors': 0, 'network errors': 0, 'bad headers': 0, 'invalid user record': 0,
                        'total records': 0}
         self.no_data_count = 0
+        self.nursery = None
 
     @property
     def seconds_remaining(self):
@@ -62,7 +63,8 @@ class GetMastodonData:
             print(f'{e} : {d}')
 
 
-    async def get_data(self):
+    async def get_data(self, nursery):
+        self.nursery = nursery
         async with httpx.AsyncClient() as client:
             params = next(self.params_g)
             try:
@@ -96,23 +98,12 @@ class GetMastodonData:
             self._stats['json errors'] += 1
             return
         if not users:
-            logging.info('No data remaining')
+            logging.info('No data returned')
             self.no_data_count += 1
-            if self.no_data_count >= 10:  # need to wait to ensure pending request with data return
-                logging.info(self.stats)
-                sys.exit(0)
         for user in users:
             self._stats['total records'] += 1
-            # with open('all.txt', 'a') as f:  # save all data, for debug
-            #     json.dump(user, f)
-            #     f.write('\n')
             if user == 'error':
                 self._stats['invalid user record'] += 1
-                # print(f'Error detected: {user}')
-                # this was here to capture failed requests to replay them, given the issues with the api,
-                # and the redudant data - this is commented out
-                # with open(self.fail_fn, 'a') as ffn:
-                #     ffn.write(f'{url}\n')
                 continue
             if user['url'] in self.unique_url:
                 print(f"user not unique: {user['url']}")
@@ -124,7 +115,10 @@ class GetMastodonData:
                 json.dump(user, f)
                 f.write('\n')
                 print(f"{user['url']} followers: {user['followers_count']}")
-
+        # if no more data remains, exit early
+        if self.no_data_count and len(self.nursery.child_tasks) == 1:
+            logging.info(self.stats)
+            sys.exit(0)
 
 async def main(server, min):
     log_dir = Path('log')
@@ -141,7 +135,7 @@ async def main(server, min):
                 async with trio.open_nursery() as nursery:
                     start = trio.current_time()
                     for _ in range(s_req):  # 10 requests at a time, works without server failures on mastodon.social
-                        nursery.start_soon(gmd.get_data)
+                        nursery.start_soon(gmd.get_data, nursery)
                     print(f'{s_req} Requests have been scheduled...')
                 print(f'Competed successfully! Seconds remaining to limit reset: {gmd.seconds_remaining}')
                 # target 300 call/5min, 1 call/sec... add wait to slow down to that rate
