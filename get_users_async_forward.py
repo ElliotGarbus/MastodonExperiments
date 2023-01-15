@@ -15,8 +15,7 @@ warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
 
 class GetMastodonData:
-    def __init__(self,  server='mastodon.social', local='true'):
-        # local is part of the url, users local to the server 'true' or 'false'
+    def __init__(self,  server='mastodon.social'):
         save_dir = Path('results')
         save_dir.mkdir(exist_ok=True)
         dt = datetime.now().isoformat(timespec='seconds').replace(':', '_')  # part of fine name
@@ -77,7 +76,9 @@ class GetMastodonData:
             except (httpx.TimeoutException, httpx.ConnectTimeout, httpx.ConnectError) as e:
                 self._stats['network errors'] += 1
                 logging.error(f'{e} on {e.request.url!r}')
-
+            except httpx.RemoteProtocolError as e:
+                logging.error(f'Response {e} while requesting {e.request.url!r}.')
+                sys.exit(0)
 
     async def number_of_users(self):
         # not currently being called
