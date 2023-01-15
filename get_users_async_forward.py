@@ -78,7 +78,8 @@ class GetMastodonData:
                     sys.exit(0)
             except (httpx.TimeoutException, httpx.ConnectTimeout, httpx.ConnectError) as e:
                 self._stats['network errors'] += 1
-                logging.error(f'{e} on {e.request.url!r}')
+                logging.error(f'{e} on {e.request.url!r}')  # todo: add early exit on disconnect
+                sys.exit(0)
             except httpx.RemoteProtocolError as e:
                 logging.error(f'Response {e} while requesting {e.request.url!r}.')
                 sys.exit(0)
