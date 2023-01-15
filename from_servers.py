@@ -19,17 +19,20 @@ def batched(iterable, n):
 
 
 async def launch_process(server, minutes):
+    print(f'Scheduling directory scan of {server} for {minutes} minutes')
     await trio.run_process(['python', '.\get_users_async_forward.py', server, '-t', f'{minutes}'],
                            shell=True, stdout=DEVNULL)
+    print(f'{server} scan complete')
 
 async def main(duration):
+    broken_servers = ['loforo.com', 'mas.town']
     servers = get_instances(300) # 0 for all servers
     print(f'{len(servers)} servers selected')
-    # servers.remove('loforo.com')  # directory call is unsupported
+    for s in broken_servers:
+        servers.remove(s)
     for batch in batched(servers, 25):  # process 25 at a time - this can be adjusted for platform
         async with trio.open_nursery() as nursery:
             for s in batch:
-                print(f'Scheduling directory scan of {s} for {duration} minutes')
                 nursery.start_soon(launch_process, s, duration)
     print('All Done!')
 
