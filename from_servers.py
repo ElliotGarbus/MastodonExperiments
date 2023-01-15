@@ -25,7 +25,7 @@ async def launch_process(server, minutes):
     print(f'{server} scan complete')
 
 async def main(duration):
-    broken_servers = ['loforo.com', 'mas.town']
+    broken_servers = ['loforo.com', 'mas.town', 'mastodon.top']
     servers = get_instances(300) # 0 for all servers
     print(f'{len(servers)} servers selected')
     for s in broken_servers:
