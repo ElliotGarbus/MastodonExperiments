@@ -76,12 +76,10 @@ class GetMastodonData:
                 logging.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
                 if e.response.status_code in [401, 404, 502, 504]:
                     sys.exit(0)
-            except (httpx.TimeoutException, httpx.ConnectTimeout, httpx.ConnectError) as e:
+            except (httpx.TimeoutException, httpx.ConnectTimeout,
+                    httpx.RemoteProtocolError, httpx.ConnectError) as e:
                 self._stats['network errors'] += 1
-                logging.error(f'{e} on {e.request.url!r}')  # todo: add early exit on disconnect
-                sys.exit(0)
-            except httpx.RemoteProtocolError as e:
-                logging.error(f'Response {e} while requesting {e.request.url!r}.')
+                logging.error(f'{e} on {e.request.url!r}')
                 sys.exit(0)
 
     async def number_of_users(self):
