@@ -74,7 +74,7 @@ class GetMastodonData:
                 self.save(r)
             except httpx.HTTPStatusError as e:
                 logging.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
-                if e.response.status_code in [401, 404]:
+                if e.response.status_code in [401, 404]: # todo are there more exit conditions?
                     sys.exit(0)
             except (httpx.TimeoutException, httpx.ConnectTimeout, httpx.ConnectError) as e:
                 self._stats['network errors'] += 1
@@ -100,21 +100,21 @@ class GetMastodonData:
         if not users:
             logging.info('No data returned')
             self.no_data_count += 1
-        for user in users:
-            self._stats['total records'] += 1
-            if user == 'error':
-                self._stats['invalid user record'] += 1
-                continue
-            if user['url'] in self.unique_url:
-                print(f"user not unique: {user['url']}")
-                continue
 
-            self.unique_url.add(user['url'])
-
-            with open(self.data_fn, 'a') as f:  # only save unique data
+        with open(self.data_fn, 'a') as f:  # only save unique data
+            for user in users:
+                self._stats['total records'] += 1
+                if user == 'error':
+                    self._stats['invalid user record'] += 1
+                    continue
+                if user['url'] in self.unique_url:
+                    print(f"user not unique: {user['url']}")
+                    continue
+                self.unique_url.add(user['url'])
                 json.dump(user, f)
                 f.write('\n')
                 print(f"{user['url']} followers: {user['followers_count']}")
+
         # if no more data remains, exit early
         if self.no_data_count and len(self.nursery.child_tasks) == 1:
             logging.info(self.stats)
