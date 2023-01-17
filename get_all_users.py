@@ -89,7 +89,7 @@ class MastodonInstance:
                     self.save(r)
                 except httpx.HTTPStatusError as e:
                     self.logger.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
-                    if e.response.status_code != 503:
+                    if e.response.status_code != 503: # continue on 503 error
                         self.finished = True
                 except (httpx.TimeoutException, httpx.ConnectError, httpx.RemoteProtocolError) as e:
                     self.logger.error(f'Timeout or Connection Error {e} on {url}')
