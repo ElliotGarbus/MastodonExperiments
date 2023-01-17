@@ -58,7 +58,7 @@ class MastodonInstance:
         try:
             users = r.json()
         except json.decoder.JSONDecodeError as e:
-            self.logger.error(f'JSON error {e} \n {r.text}')
+            self.logger.error(f'JSON error {e}')
             self.finished = True
             return
         with open(self.data_fn, 'a') as f:  # only save unique data
