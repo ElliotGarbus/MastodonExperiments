@@ -8,6 +8,7 @@ import trio
 
 from get_instances import get_instances
 
+# todo put mastodon.social in it's own process...
 
 def batched(iterable, n):
     "Batch data into tuples of length n. The last batch may be shorter."
@@ -29,10 +30,11 @@ async def launch_process(server, minutes):
 async def main(duration):
     broken_servers = ['loforo.com', 'mas.town', 'mastodon.top', 'meow.social']
     servers = get_instances(300)  # 0 for all servers
+    servers.remove('mastodon.social')  # put mastodon.social in it's own process...
     print(f'{len(servers)} servers selected')
     for s in broken_servers:
         servers.remove(s)
-    for batch in batched(servers, 25):  # process 25 at a time - this can be adjusted for platform
+    for batch in batched(servers, 100):  # process at a time - this can be adjusted for platform
         async with trio.open_nursery() as nursery:
             for s in batch:
                 nursery.start_soon(launch_process, s, duration)
