@@ -92,7 +92,7 @@ class MastodonInstance:
                     if e.response.status_code != 503:
                         self.finished = True
                 except (httpx.TimeoutException, httpx.ConnectError, httpx.RemoteProtocolError) as e:
-                    self.logger.error(f'Error {e} on {url}')
+                    self.logger.error(f'Timeout or Connection Error {e} on {url}')
                     self.finished = True
 
 
