@@ -74,26 +74,36 @@ class MastodonInstance:
             self.logger.info('All Data Returned')
             self.finished = True
 
+    async def _request(self, params, client):
+        url = f"https://{self.name}/api/v1/directory"
+        try:
+            start = trio.current_time()
+            r = await client.get(url, params=params, timeout=180)  # allow three minutes
+            r.raise_for_status()
+            elapsed_time = trio.current_time() - start
+            if elapsed_time < 1:
+                await trio.sleep(1 - elapsed_time)  # one second per call rate limit
+            # self.save(r)
+            return r
+        except httpx.HTTPStatusError as e:
+            self.logger.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
+            if e.response.status_code != 503:  # continue on 503 error
+                self.finished = True
+        except (httpx.TimeoutException, httpx.ConnectError, httpx.RemoteProtocolError) as e:
+            self.logger.error(f'Timeout or Connection Error {e} on {url}')
+            self.finished = True
+        return None
+
+
     async def get_users(self):
         url = f"https://{self.name}/api/v1/directory"
         print(f'Get users from {self.name} ')
         async with httpx.AsyncClient() as client:
             while not self.finished:
-                try:
-                    start = trio.current_time()
-                    r = await client.get(url, params=next(self.params_g), timeout=180)  # allow three minutes
-                    r.raise_for_status()
-                    elapsed_time = trio.current_time() - start
-                    if elapsed_time < 1:
-                        await trio.sleep(1 - elapsed_time)  # one second per call rate limit
+                params = next(self.params_g)
+                r = await self._request(params, client)
+                if r:
                     self.save(r)
-                except httpx.HTTPStatusError as e:
-                    self.logger.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
-                    if e.response.status_code != 503: # continue on 503 error
-                        self.finished = True
-                except (httpx.TimeoutException, httpx.ConnectError, httpx.RemoteProtocolError) as e:
-                    self.logger.error(f'Timeout or Connection Error {e} on {url}')
-                    self.finished = True
 
 
 async def main():
@@ -104,7 +114,7 @@ async def main():
     results_dir.mkdir(exist_ok=True)
     delete_files(results_dir)
     print('getting instances')
-    instances = get_instances(0)  # 0 is all instances
+    instances = get_instances(1)  # 0 is all instances
     print('instances received')
     mis = []
     for instance in instances:
