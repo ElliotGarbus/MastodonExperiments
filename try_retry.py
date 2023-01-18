@@ -44,7 +44,6 @@ class MastodonInstance:
             except httpx.HTTPStatusError as e:
                 self.logger.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
                 print(f'Error {e.response.status_code}')
-                # return e.response.status_code
             except RetryError:
                 self.logger.error('Finished retries')
                 print('finished retries')
