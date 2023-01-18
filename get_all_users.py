@@ -104,6 +104,7 @@ class MastodonInstance:
                     self.finished = True
                 except RetryError:
                     self.logger.error('Finished retries with no response')
+                    self.finished = True
 
 
 async def main():
