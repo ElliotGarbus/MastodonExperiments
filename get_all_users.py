@@ -7,7 +7,7 @@ import httpx
 import trio
 from trio import TrioDeprecationWarning
 from tenacity import (AsyncRetrying, stop_after_attempt, TryAgain, wait_fixed, after_log,
-                      retry_if_exception_type)
+                      retry_if_exception_type, RetryError)
 
 from mastodon_instances_key import mi_info
 
@@ -102,6 +102,8 @@ class MastodonInstance:
                 except (httpx.TimeoutException, httpx.ConnectError, httpx.RemoteProtocolError) as e:
                     self.logger.error(f'Timeout or Connection Error {e} on {url}')
                     self.finished = True
+                except RetryError:
+                    self.logger.error('Finished retries with no response')
 
 
 async def main():
