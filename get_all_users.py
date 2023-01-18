@@ -25,7 +25,7 @@ mi_info = {'name':'app_name',
 def get_instances(n):
     # returns a list of servers, uses instances.social api  https://instances.social/api/doc/
     header = {'Authorization': 'Bearer ' + mi_info['token']}
-    params = {'count': n, 'include_down': 'false', 'language': 'en', 'sort_by': 'users', 'sort_order': 'desc'}
+    params = {'count': n, 'include_down': True, 'language': 'en', 'sort_by': 'users', 'sort_order': 'desc'}
     r = httpx.get('https://instances.social/api/1.0/instances/list', headers=header, params=params)
     d = r.json()
     return d['instances']  # keys of interest: 'name', 'users', 'active_users'
@@ -84,7 +84,7 @@ class MastodonInstance:
                 try:
                     async for attempt in AsyncRetrying(sleep=trio.sleep, stop=stop_after_attempt(5),
                                                        wait=wait_fixed(5),
-                                                       retry=retry_if_exception_type(TryAgain),
+                                                       retry=retry_if_exception_type((TryAgain, httpx.ConnectError, httpx.TimeoutException)),
                                                        after=after_log(self.logger, logging.DEBUG)):
                         with attempt:
                             start = trio.current_time()
@@ -99,8 +99,8 @@ class MastodonInstance:
                 except httpx.HTTPStatusError as e:
                     self.logger.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
                     self.finished = True
-                except (httpx.TimeoutException, httpx.ConnectError, httpx.RemoteProtocolError) as e:
-                    self.logger.error(f'Timeout or Connection Error {e} on {url}')
+                except (httpx.RemoteProtocolError) as e:
+                    self.logger.error(f'Connection Error {e} on {url}')
                     self.finished = True
                 except RetryError:
                     self.logger.error('Finished retries with no response')
