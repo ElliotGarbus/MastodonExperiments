@@ -5,8 +5,9 @@ from pathlib import Path
 
 import httpx
 import trio
-from tenacity import AsyncRetrying, stop_after_attempt, retry_if_exception_type, TryAgain, wait_fixed, after_log
 from trio import TrioDeprecationWarning
+from tenacity import (AsyncRetrying, stop_after_attempt, TryAgain, wait_fixed, after_log,
+                      retry_if_exception_type)
 
 from mastodon_instances_key import mi_info
 
@@ -81,12 +82,15 @@ class MastodonInstance:
         async with httpx.AsyncClient() as client:
             while not self.finished:
                 try:
-                    async for attempt in AsyncRetrying(sleep=trio.sleep, stop=stop_after_attempt(10),
-                                                       wait=wait_fixed(5), after=after_log(self.logger, logging.DEBUG),
-                                                       retry=retry_if_exception_type(TryAgain)):
+                    async for attempt in AsyncRetrying(sleep=trio.sleep, stop=stop_after_attempt(5),
+                                                       wait=wait_fixed(5),
+                                                       retry=retry_if_exception_type(TryAgain),
+                                                       after=after_log(self.logger, logging.DEBUG)):
                         with attempt:
                             start = trio.current_time()
                             r = await client.get(url, params=next(self.params_g), timeout=180)  # allow three minutes
+                            if r.status_code == 503:
+                                raise TryAgain
                             r.raise_for_status()
                             elapsed_time = trio.current_time() - start
                             if elapsed_time < 1:
@@ -94,9 +98,6 @@ class MastodonInstance:
                             self.save(r)
                 except httpx.HTTPStatusError as e:
                     self.logger.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
-                    # if e.response.status_code == 503: # continue on 503 error
-                        # raise TryAgain
-                        # todo: return the status code, if is 503, retry... use callback.
                     self.finished = True
                 except (httpx.TimeoutException, httpx.ConnectError, httpx.RemoteProtocolError) as e:
                     self.logger.error(f'Timeout or Connection Error {e} on {url}')
