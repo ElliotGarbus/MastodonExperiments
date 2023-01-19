@@ -17,13 +17,13 @@ warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 class GetMastodonData:
     def __init__(self,  server='mastodon.social', local='true'):
         # local is part of the url, users local to the server 'true' or 'false'
-        save_dir = Path('../results')
+        save_dir = Path('../saved/results')
         save_dir.mkdir(exist_ok=True)
         dt = datetime.now().isoformat(timespec='seconds').replace(':', '_')  # part of fine name
         fn = server.replace('.', '_') + '_' + dt + '.txt'
         self.data_fn = save_dir / fn
         print(f'Data will be saved to: {self.data_fn}')
-        log_dir = Path('../log')
+        log_dir = Path('../saved/log')
         log_dir.mkdir(exist_ok=True)
         log_fn = log_dir / fn
         logging.basicConfig(filename=log_fn, encoding='utf-8', level=logging.DEBUG)

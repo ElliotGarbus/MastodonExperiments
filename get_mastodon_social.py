@@ -16,7 +16,7 @@ warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
 class GetMastodonData:
     def __init__(self,  server='mastodon.social'):
-        save_dir = Path('results')
+        save_dir = Path('saved/results')
         save_dir.mkdir(exist_ok=True)
         dt = datetime.now().isoformat(timespec='seconds').replace(':', '_')  # part of fine name
         fn = server.replace('.', '_') + '_' + dt + '.txt'
@@ -121,7 +121,7 @@ class GetMastodonData:
             sys.exit(0)
 
 async def main(server, min):
-    log_dir = Path('log')
+    log_dir = Path('saved/log')
     log_dir.mkdir(exist_ok=True)
     log_fn = log_dir / (server.replace('.', '_') + '.txt')
     log_fn.unlink(missing_ok=True)

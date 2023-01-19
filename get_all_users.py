@@ -2,6 +2,7 @@ import json
 import logging
 import warnings
 from pathlib import Path
+from datetime import datetime
 
 import httpx
 import trio
@@ -56,7 +57,7 @@ class MastodonInstance:
         self.finished = False  # used to indicate end of scan, or fatal error
 
     def save(self, r):
-        print(f'save {self.name}')
+        print(f'save {self.name} {datetime.now():%m/%d/%Y %H:%M:%S}')
         try:
             users = r.json()
         except json.decoder.JSONDecodeError as e:
@@ -85,11 +86,11 @@ class MastodonInstance:
                     async for attempt in AsyncRetrying(sleep=trio.sleep, stop=stop_after_attempt(5),
                                                        wait=wait_fixed(5),
                                                        retry=retry_if_exception_type((TryAgain, httpx.ConnectError, httpx.TimeoutException)),
-                                                       after=after_log(self.logger, logging.DEBUG)):
+                                                       after=after_log(self.logger, logging.DEBUG)): # todo add before log
                         with attempt:
                             start = trio.current_time()
                             r = await client.get(url, params=next(self.params_g), timeout=180)  # allow three minutes
-                            if r.status_code == 503:
+                            if r.status_code == 503 or (self.name == 'mastodon.social' and r.status_code != 200):
                                 raise TryAgain
                             r.raise_for_status()
                             elapsed_time = trio.current_time() - start
@@ -108,6 +109,7 @@ class MastodonInstance:
 
 
 async def main():
+    logging.basicConfig(filename='rootlog.log', level=logging.DEBUG)
     log_dir = Path('log')
     log_dir.mkdir(exist_ok=True)
     delete_files(log_dir)
@@ -115,7 +117,7 @@ async def main():
     results_dir.mkdir(exist_ok=True)
     delete_files(results_dir)
     print('getting instances')
-    instances = get_instances(0)  # 0 is all instances
+    instances = get_instances(1)  # 0 is all instances
     print('instances received')
     mis = []
     for instance in instances:
