@@ -1,15 +1,14 @@
 import json
 import logging
 import warnings
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 import httpx
-
 import trio
-from trio import TrioDeprecationWarning
 from tenacity import (AsyncRetrying, stop_after_attempt, TryAgain, wait_fixed, after_log,
                       retry_if_exception_type, RetryError)
+from trio import TrioDeprecationWarning
 from wakepy import keepawake
 
 from mastodon_instances_key import mi_info
@@ -87,7 +86,8 @@ class MastodonInstance:
                 try:
                     async for attempt in AsyncRetrying(sleep=trio.sleep, stop=stop_after_attempt(5),
                                                        wait=wait_fixed(5),
-                                                       retry=retry_if_exception_type((TryAgain, httpx.ConnectError, httpx.TimeoutException)),
+                                                       retry=retry_if_exception_type(
+                                                           (TryAgain, httpx.ConnectError, httpx.TimeoutException)),
                                                        after=after_log(self.logger, logging.DEBUG)):
                         with attempt:
                             start = trio.current_time()
@@ -130,7 +130,7 @@ async def main():
             nursery.start_soon(mi.get_users)
     print('Done!')
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     with keepawake(keep_screen_awake=False):
         trio.run(main)
