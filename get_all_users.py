@@ -88,7 +88,7 @@ class MastodonInstance:
                     async for attempt in AsyncRetrying(sleep=trio.sleep, stop=stop_after_attempt(5),
                                                        wait=wait_fixed(5),
                                                        retry=retry_if_exception_type((TryAgain, httpx.ConnectError, httpx.TimeoutException)),
-                                                       after=after_log(self.logger, logging.DEBUG)): # todo add before log
+                                                       after=after_log(self.logger, logging.DEBUG)):
                         with attempt:
                             start = trio.current_time()
                             r = await client.get(url, params=next(self.params_g), timeout=180)  # allow three minutes
