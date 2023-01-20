@@ -5,10 +5,12 @@ from pathlib import Path
 from datetime import datetime
 
 import httpx
+
 import trio
 from trio import TrioDeprecationWarning
 from tenacity import (AsyncRetrying, stop_after_attempt, TryAgain, wait_fixed, after_log,
                       retry_if_exception_type, RetryError)
+from wakepy import keepawake
 
 from mastodon_instances_key import mi_info
 
@@ -109,7 +111,7 @@ class MastodonInstance:
 
 
 async def main():
-    logging.basicConfig(filename='rootlog.log', level=logging.DEBUG)
+    # logging.basicConfig(filename='rootlog.log', level=logging.DEBUG)
     log_dir = Path('log')
     log_dir.mkdir(exist_ok=True)
     delete_files(log_dir)
@@ -117,7 +119,7 @@ async def main():
     results_dir.mkdir(exist_ok=True)
     delete_files(results_dir)
     print('getting instances')
-    instances = get_instances(1)  # 0 is all instances
+    instances = get_instances(0)  # 0 is all instances
     print('instances received')
     mis = []
     for instance in instances:
@@ -128,5 +130,7 @@ async def main():
             nursery.start_soon(mi.get_users)
     print('Done!')
 
+if __name__ == '__main__':
 
-trio.run(main)
+    with keepawake(keep_screen_awake=False):
+        trio.run(main)
