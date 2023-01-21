@@ -10,7 +10,7 @@ def get_user():
                 jl = json.loads(line)
                 yield jl
 
-search_term = 'tags/python'
+search_term = 'tags/guitar'
 results = []
 for user in get_user():
     if search_term.lower() in user['note'].lower():
