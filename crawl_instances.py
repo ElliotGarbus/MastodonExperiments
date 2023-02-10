@@ -27,12 +27,10 @@ warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
 async def get_peers(name):
     url = f"https://{name}/api/v1/instance/peers"
-    logging.info(f'URL: {url}')
     print(f'Get peers from {name} ')
     async with httpx.AsyncClient() as client:
         try:
-            async for attempt in AsyncRetrying(sleep=trio.sleep, stop=stop_after_attempt(5),
-                                               wait=wait_fixed(5),
+            async for attempt in AsyncRetrying(sleep=trio.sleep, stop=stop_after_attempt(3), wait=wait_fixed(5),
                                                retry=retry_if_exception_type(
                                                    (TryAgain, httpx.ConnectError, httpx.TimeoutException))):
                 with attempt:
@@ -63,10 +61,11 @@ async def crawl_peers(name, known):
         r = await get_peers(instance)  # could create a new nursery but of little value if most are known
         try:
             peers = r.json()
-            peers = [instance for instance in peers if not peers.endswidth('activitypub-troll.cf') ]
-            print(f'{peers=}')
         except (AttributeError, json.decoder.JSONDecodeError):
             continue
+        peers = [x for x in peers if not any([x.endswith('activitypub-troll.cf'), x.endswith('misskey-forkbomb.cf'),
+                                              x.endswith('repl.co')])]
+        print(f'{peers=}')
         unknown = set(peers) - known
         known.update(unknown)  # add the newly found instances to the known list
 
