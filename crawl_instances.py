@@ -53,9 +53,8 @@ async def crawl_peers(name, known):
     get peers, if peers are not on the know list, scan to read their peers
     repeat crawling down the peers - until all are known
     """
-    start = True
-    unknown = None
-    while start or unknown:
+    run_flag = True
+    while run_flag:
         instance = name if start else unknown.pop()
         start = False
         r = await get_peers(instance)  # could create a new nursery but of little value if most are known
@@ -65,8 +64,9 @@ async def crawl_peers(name, known):
             continue
         peers = [x for x in peers if not any([x.endswith('activitypub-troll.cf'), x.endswith('misskey-forkbomb.cf'),
                                               x.endswith('repl.co')])]
-        print(f'{peers=}')
-        unknown = set(peers) - known
+        # todo: write to graph file
+        run_flag = unknown = set(peers) - known
+        print(f'{name} Number of peers: {len(peers)}; Number unknown {len(unknown)}')
         known.update(unknown)  # add the newly found instances to the known list
 
 
