@@ -53,8 +53,9 @@ async def crawl_peers(name, known):
     get peers, if peers are not on the know list, scan to read their peers
     repeat crawling down the peers - until all are known
     """
-    run_flag = True
-    while run_flag:
+    unknown = None
+    start = True
+    while start or unknown:
         instance = name if start else unknown.pop()
         start = False
         r = await get_peers(instance)  # could create a new nursery but of little value if most are known
@@ -62,10 +63,20 @@ async def crawl_peers(name, known):
             peers = r.json()
         except (AttributeError, json.decoder.JSONDecodeError):
             continue
-        peers = [x for x in peers if not any([x.endswith('activitypub-troll.cf'), x.endswith('misskey-forkbomb.cf'),
-                                              x.endswith('repl.co')])]
+        except UnicodeDecodeError as e:
+            logging.error(f'{e} {r.text}')  # some have emoji's in url
+            s = r.text.encode('punycode')
+            peers = json.loads(s)
+
+
+        try:
+            peers = [x for x in peers if not any([x.endswith('activitypub-troll.cf'), x.endswith('misskey-forkbomb.cf'),
+                                                  x.endswith('repl.co')])]
+        except AttributeError:
+            logging.exception(f'Attribute Error: {peers}')
+
         # todo: write to graph file
-        run_flag = unknown = set(peers) - known
+        unknown = set(peers) - known
         print(f'{name} Number of peers: {len(peers)}; Number unknown {len(unknown)}')
         known.update(unknown)  # add the newly found instances to the known list
 
@@ -82,8 +93,6 @@ async def main():
     print(known)
     with open('out_mastodon_instances.txt', 'w') as f:
         json.dump(list(known), f)
-
-
     print('Done!')
 
 
