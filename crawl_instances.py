@@ -14,6 +14,7 @@ when complete update know and write the file
 import json
 import logging
 import warnings
+from urllib.parse import urlparse, urlunparse
 
 import httpx
 import trio
@@ -24,15 +25,23 @@ from trio import TrioDeprecationWarning
 # turn off deprecation warning issue with a httpx dependency, anyio
 warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
+def convert_idna_address(url: str) -> str:
+    parsed_url = urlparse(url)
+    return urlunparse(parsed_url._replace(netloc=parsed_url.netloc.encode("idna").decode("ascii")))
+
 
 async def get_peers(name):
-    url = f"https://{name}/api/v1/instance/peers"
     print(f'Get peers from {name} ')
+    #url = convert_idna_address(f"https://{name}/api/v1/instance/peers")
+    # properly encode urls that have emoji characters or other unicode
+    url = f"https://{name}/api/v1/instance/peers"
+    print(f'{url=}')
     async with httpx.AsyncClient() as client:
         try:
             async for attempt in AsyncRetrying(sleep=trio.sleep, stop=stop_after_attempt(3), wait=wait_fixed(5),
                                                retry=retry_if_exception_type(
-                                                   (TryAgain, httpx.ConnectError, httpx.TimeoutException))):
+                                                   (TryAgain, httpx.ConnectError, httpx.TimeoutException)),
+                                               after=after_log(logging, logging.DEBUG)):
                 with attempt:
                     r = await client.get(url, timeout=180)  # allow three minutes
                     if r.status_code == 503 or (name == 'mastodon.social' and r.status_code != 200):
@@ -46,7 +55,9 @@ async def get_peers(name):
         except RetryError:
             logging.error('Finished retries with no response')
         except Exception as e:
-            logging.exception(e)
+            logging.exception(f'{name} {url} {e}')
+            print(f'{url} {name} {e}')
+            raise e
 
 async def crawl_peers(name, known):
     """
@@ -59,21 +70,20 @@ async def crawl_peers(name, known):
         instance = name if start else unknown.pop()
         start = False
         r = await get_peers(instance)  # could create a new nursery but of little value if most are known
-        try:
-            peers = r.json()
-        except (AttributeError, json.decoder.JSONDecodeError):
-            continue
-        except UnicodeDecodeError as e:
-            logging.error(f'{e} {r.text}')  # some have emoji's in url
-            s = r.text.encode('punycode')
-            peers = json.loads(s)
-
-
-        try:
-            peers = [x for x in peers if not any([x.endswith('activitypub-troll.cf'), x.endswith('misskey-forkbomb.cf'),
-                                                  x.endswith('repl.co')])]
-        except AttributeError:
-            logging.exception(f'Attribute Error: {peers}')
+        # try:
+        peers = r.json()
+        # except (AttributeError, json.decoder.JSONDecodeError) as e:
+        #     logging.error(f'Attribute Error or Decoding Error: {instance} {e}')
+        #     continue
+        # except UnicodeDecodeError as e:
+        #     logging.error(f'{e} {instance} {r.text}')  # some have emoji's in url?
+        #     s = r.text.encode('punycode')
+        #     peers = json.loads(s)
+        # try:
+        peers = [x for x in peers if not any([x.endswith('activitypub-troll.cf'), x.endswith('misskey-forkbomb.cf'),
+                                              x.endswith('repl.co')])]
+        # except AttributeError:
+        #     logging.exception(f'Attribute Error: {peers}')
 
         # todo: write to graph file
         unknown = set(peers) - known
@@ -83,14 +93,15 @@ async def crawl_peers(name, known):
 
 async def main():
     logging.basicConfig(filename='rootlog.log', level=logging.DEBUG)
-    with open('mastodon_instances.txt') as f:  # todo: add exception handling
-        instances = json.load(f)
-    known = set(instances)
+    # with open('mastodon_instances.txt') as f:  # todo: add exception handling
+    #     instances = json.load(f)
 
+    instances = ['🍺🌯.to']
+
+    known = set(instances)
     async with trio.open_nursery() as nursery:
         for mi in instances:
             nursery.start_soon(crawl_peers, mi, known)
-    print(known)
     with open('out_mastodon_instances.txt', 'w') as f:
         json.dump(list(known), f)
     print('Done!')
