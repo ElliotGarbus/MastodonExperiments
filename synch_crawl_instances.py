@@ -40,7 +40,7 @@ def get_peers(name):
     # url = f"https://{name}/api/v1/instance/peers"
     # print(f'{url=}')
     try:
-        r = requests.get(url, timeout=20)
+        r = requests.get(url, timeout=10)
         r.raise_for_status()
         return r.json()
     except requests.exceptions.JSONDecodeError as e:
@@ -93,7 +93,9 @@ def main():
     #     instances = json.load(f)
 
     instances_file = Path('mastodon_instances.txt')
+    instances_file.unlink(missing_ok=True)
     graph_file = Path('graph.txt')
+    graph_file.unlink(missing_ok=True)
 
     instances = ['mastodon.social']    #['🍺🌯.to']
 
