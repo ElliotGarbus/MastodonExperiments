@@ -86,7 +86,7 @@ def crawl_peers(name, known, i_file, g_file):
         write_data(instance, peers, i_file, g_file)
         new_unknown_peers = set(peers) - known
         unknown.update(new_unknown_peers)
-        print(f'{instance} Number of peers: {len(peers)}; Number new unknonw: {len(new_unknown_peers)};Number unknown {len(unknown)}')
+        print(f'{instance} Number of peers: {len(peers)}; Number unknown {len(unknown)}')
 
 
 def main():
