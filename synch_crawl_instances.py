@@ -83,7 +83,6 @@ def crawl_peers(name, known, i_file, g_file):
         peers = [x for x in peers if not any([x is None, x.endswith('activitypub-troll.cf'),
                                               x.endswith('misskey-forkbomb.cf'),
                                               x.endswith('repl.co'), x.startswith("192.")])]
-
         write_data(instance, peers, i_file, g_file)
         new_unknown_peers = set(peers) - known
         unknown.update(new_unknown_peers)
