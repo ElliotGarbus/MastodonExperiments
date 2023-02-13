@@ -79,10 +79,11 @@ def crawl_peers(name, known, i_file, g_file):
         instance = unknown.pop()
         known.add(instance)
         peers = get_peers(instance)
+        # filter out error or odd conditions from peers list
         peers = [x for x in peers if not any([x is None, x.endswith('activitypub-troll.cf'),
                                               x.endswith('misskey-forkbomb.cf'),
                                               x.endswith('repl.co'), x.startswith("192.")])]
-        # filter out error or odd conditions from peers list
+
         write_data(instance, peers, i_file, g_file)
         new_unknown_peers = set(peers) - known
         unknown.update(new_unknown_peers)
