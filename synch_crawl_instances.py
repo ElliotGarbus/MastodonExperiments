@@ -85,6 +85,7 @@ def crawl_peers(name, known, i_file, g_file):
         peers = [x for x in peers if not any([x.endswith('activitypub-troll.cf'),
                                               x.endswith('misskey-forkbomb.cf'),
                                               x.endswith('repl.co'),
+                                              x.endswidth('gab.best'),
                                               x.startswith("192.")])]
         if peers:  # don't save data without peers - indicates an issue
             write_data(instance, peers, i_file, g_file)
