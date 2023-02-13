@@ -84,7 +84,7 @@ def crawl_peers(name, known):
         known.add(instance)
         peers = get_peers(instance)
         peers = [x for x in peers if not any([x.endswith('activitypub-troll.cf'), x.endswith('misskey-forkbomb.cf'),
-                                              x.endswith('repl.co')])]
+                                              x.endswith('repl.co'), x.startswith("192.")])]
         write_data(instance, peers)
         new_unknown_peers = set(peers) - known
         unknown.update(new_unknown_peers)
@@ -97,7 +97,7 @@ def main():
     # with open('mastodon_instances.txt') as f:  # todo: add exception handling
     #     instances = json.load(f)
 
-    instances = ['🍺🌯.to']
+    instances = ['mastodon.social']    #['🍺🌯.to']
 
     known = set(instances)
     for mi in instances:
