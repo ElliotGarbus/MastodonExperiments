@@ -73,17 +73,14 @@ def crawl_peers(name, known, i_file, g_file):
     get peers, if peers are not on the know list, scan to read their peers
     repeat crawling down the peers - until all are known
     """
-    unknown = set(name)
+    unknown = {name}
     while unknown:
         instance = unknown.pop()
         known.add(instance)
         peers = get_peers(instance)
-        try:
-            peers = [x for x in peers if not any([x.endswith('activitypub-troll.cf'), x.endswith('misskey-forkbomb.cf'),
-                                                  x.endswith('repl.co'), x.startswith("192.")])]
-        except AttributeError:
-            logging.exception(f'Attribute Error: {peers}')
-            peers = []
+        peers = [x for x in peers if not any([x is None, x.endswith('activitypub-troll.cf'),
+                                              x.endswith('misskey-forkbomb.cf'),
+                                              x.endswith('repl.co'), x.startswith("192.")])]
         write_data(instance, peers, i_file, g_file)
         new_unknown_peers = set(peers) - known
         unknown.update(new_unknown_peers)
