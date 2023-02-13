@@ -18,6 +18,7 @@ from urllib.parse import urlparse, urlunparse
 from pathlib import Path
 
 import requests
+from wakepy import keepawake
 
 # import httpx
 # import trio
@@ -81,6 +82,7 @@ def crawl_peers(name, known, i_file, g_file):
         peers = [x for x in peers if not any([x is None, x.endswith('activitypub-troll.cf'),
                                               x.endswith('misskey-forkbomb.cf'),
                                               x.endswith('repl.co'), x.startswith("192.")])]
+        # filter out error or odd conditions from peers list
         write_data(instance, peers, i_file, g_file)
         new_unknown_peers = set(peers) - known
         unknown.update(new_unknown_peers)
@@ -108,6 +110,5 @@ def main():
 
 
 if __name__ == '__main__':
-    # with keepawake(keep_screen_awake=False):
-    # trio.run(main)
-    main()
+    with keepawake(keep_screen_awake=False):
+        main()
