@@ -15,6 +15,7 @@ import json
 import logging
 # import warnings
 from urllib.parse import urlparse, urlunparse
+from pathlib import Path
 
 import requests
 
@@ -58,38 +59,35 @@ def get_peers(name):
         print(f'{url} {name} {e}')
         raise e
 
-def write_data(instance, peers):
+def write_data(instance, peers, i_file, g_file):
     data = {instance: peers}
-    with open('graph.txt', 'a') as f:
+    with open(g_file, 'a') as f:
         s = json.dumps(data)
         f.write(s + '\n')
-    with open('mastodon_instances.txt', 'a') as f:
+    with open(i_file, 'a') as f:
         f.write(instance.encode('unicode_escape').decode() + '\n')
 
 
-def crawl_peers(name, known):
+def crawl_peers(name, known, i_file, g_file):
     """
     get peers, if peers are not on the know list, scan to read their peers
     repeat crawling down the peers - until all are known
     """
-    peers = get_peers(name)
-    peers = [x for x in peers if not any([x.endswith('activitypub-troll.cf'), x.endswith('misskey-forkbomb.cf'),
-                                          x.endswith('repl.co')])]
-    write_data(name, peers)
-    discovered = set()  # hold discovered instances
-    unknown = set(peers) - known
-    discovered.update(unknown)
+    unknown = set(name)
     while unknown:
         instance = unknown.pop()
         known.add(instance)
         peers = get_peers(instance)
-        peers = [x for x in peers if not any([x.endswith('activitypub-troll.cf'), x.endswith('misskey-forkbomb.cf'),
-                                              x.endswith('repl.co'), x.startswith("192.")])]
-        write_data(instance, peers)
+        try:
+            peers = [x for x in peers if not any([x.endswith('activitypub-troll.cf'), x.endswith('misskey-forkbomb.cf'),
+                                                  x.endswith('repl.co'), x.startswith("192.")])]
+        except AttributeError:
+            logging.exception(f'Attribute Error: {peers}')
+            peers = []
+        write_data(instance, peers, i_file, g_file)
         new_unknown_peers = set(peers) - known
         unknown.update(new_unknown_peers)
-        discovered.update(new_unknown_peers)
-        print(f'{instance} Number of peers: {len(peers)}; Number unknown {len(unknown)}')
+        print(f'{instance} Number of peers: {len(peers)}; Number new unknonw: {len(new_unknown_peers)};Number unknown {len(unknown)}')
 
 
 def main():
@@ -97,11 +95,14 @@ def main():
     # with open('mastodon_instances.txt') as f:  # todo: add exception handling
     #     instances = json.load(f)
 
+    instances_file = Path('mastodon_instances.txt')
+    graph_file = Path('graph.txt')
+
     instances = ['mastodon.social']    #['🍺🌯.to']
 
     known = set(instances)
     for mi in instances:
-        crawl_peers(mi, known)
+        crawl_peers(mi, known, instances_file, graph_file)
     with open('out_mastodon_instances.txt', 'w') as f:
         json.dump(list(known), f)
     print('Done!')
