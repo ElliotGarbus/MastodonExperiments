@@ -51,7 +51,8 @@ def get_peers(name):
         logging.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
         return []
     except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError,
-            requests.exceptions.ReadTimeout, requests.exceptions.TooManyRedirects) as e:
+            requests.exceptions.ReadTimeout, requests.exceptions.TooManyRedirects,
+            requests.exceptions.ChunkedEncodingError) as e:
         logging.exception(f'{name} {url} {e}')
         print(f'{url} {name} {e}')
         return []
@@ -62,9 +63,9 @@ def get_peers(name):
 
 def write_data(instance, peers, i_file, g_file):
     data = {instance: peers}
-    with open(g_file, 'a') as f:
-        s = json.dumps(data)
-        f.write(s + '\n')
+    # with open(g_file, 'a') as f:
+    #     s = json.dumps(data)
+    #     f.write(s + '\n')
     with open(i_file, 'a') as f:
         f.write(instance.encode('unicode_escape').decode() + '\n')
 
@@ -86,6 +87,7 @@ def crawl_peers(name, known, i_file, g_file, z_file):
                                               x.endswith('misskey-forkbomb.cf'),
                                               x.endswith('repl.co'),
                                               x.endswith('gab.best'),
+                                              x.endswith('ngrok.io'),
                                               x.startswith("192.")])]
         if peers:  # don't save data without peers - indicates an issue
             write_data(instance, peers, i_file, g_file)
@@ -116,7 +118,7 @@ def main():
     if zero_peers_file.exists():
         with open(zero_peers_file) as f:
             zp = f.read().splitlines()
-        known.update(zp)
+        known .update(zp)
 
     for mi in instances:
         crawl_peers(mi, known, instances_file, graph_file, zero_peers_file)
