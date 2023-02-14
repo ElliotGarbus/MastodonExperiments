@@ -110,8 +110,14 @@ def main():
     zero_peers_file = Path('zero_peers.txt')
 
     instances = ['mastodon.social']    #['🍺🌯.to']
-
     known = set(instances)
+
+    # if zero_peers_file exists, add them to known set.
+    if zero_peers_file.exists():
+        with open(zero_peers_file) as f:
+            zp = f.read().splitlines()
+        known.update(zp)
+
     for mi in instances:
         crawl_peers(mi, known, instances_file, graph_file, zero_peers_file)
     with open('out_mastodon_instances.txt', 'w') as f:
