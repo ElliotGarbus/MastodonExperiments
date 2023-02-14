@@ -91,7 +91,7 @@ def crawl_peers(name, known, i_file, g_file, z_file):
                                               x.startswith("192.")])]
         if peers:  # don't save data without peers - indicates an issue
             write_data(instance, peers, i_file, g_file)
-        # todo: create a naughty list and save it for domains not to scan...don't scan domains with no peers
+        # naughty list -- domains not to scan...don't scan domains with no peers
         else:
             with open(z_file, 'a') as f:
                 f.write(instance + '\n')
