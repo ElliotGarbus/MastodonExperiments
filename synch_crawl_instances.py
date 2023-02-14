@@ -76,6 +76,7 @@ def crawl_peers(name, known, i_file, g_file, z_file):
     repeat crawling down the peers - until all are known
     """
     unknown = {name}
+    unknowns_written = False
     while unknown:
         instance = unknown.pop()
         known.add(instance)
@@ -88,7 +89,8 @@ def crawl_peers(name, known, i_file, g_file, z_file):
                                               x.endswith('repl.co'),
                                               x.endswith('gab.best'),
                                               x.endswith('ngrok.io'),
-                                              x.startswith("192.")])]
+                                              x.startswith("192."),
+                                              x.startswith('CQIA4V')])]
         if peers:  # don't save data without peers - indicates an issue
             write_data(instance, peers, i_file, g_file)
         # naughty list -- domains not to scan...don't scan domains with no peers
@@ -98,6 +100,14 @@ def crawl_peers(name, known, i_file, g_file, z_file):
         new_unknown_peers = set(peers) - known
         unknown.update(new_unknown_peers)
         print(f'{instance} Number of peers: {len(peers)}; Number unknown {len(unknown)}')
+        if not unknowns_written and len(unknown) >= 50_000:
+            # write list of unknowns
+            data = [d.encode('unicode_escape').decode() + '\n' for d in list(unknown)]
+            with open('unknowns.txt', 'w') as f:
+                f.writelines(data)
+            unknowns_written = True
+
+
 
 
 def main():
@@ -116,9 +126,11 @@ def main():
 
     # if zero_peers_file exists, add them to known set.
     if zero_peers_file.exists():
+        print('loading zero peers file...', end='')
         with open(zero_peers_file) as f:
             zp = f.read().splitlines()
-        known .update(zp)
+        known.update(zp)
+        print('completed')
 
     for mi in instances:
         crawl_peers(mi, known, instances_file, graph_file, zero_peers_file)
