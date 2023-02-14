@@ -94,7 +94,7 @@ def crawl_peers(name, known, i_file, g_file, z_file):
         # naughty list -- domains not to scan...don't scan domains with no peers
         else:
             with open(z_file, 'a') as f:
-                f.write(instance + '\n')
+                f.write(instance.encode('unicode_escape').decode() + '\n')
         new_unknown_peers = set(peers) - known
         unknown.update(new_unknown_peers)
         print(f'{instance} Number of peers: {len(peers)}; Number unknown {len(unknown)}')
