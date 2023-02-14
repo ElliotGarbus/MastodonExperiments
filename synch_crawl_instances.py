@@ -41,7 +41,7 @@ def get_peers(name):
     # url = f"https://{name}/api/v1/instance/peers"
     # print(f'{url=}')
     try:
-        r = requests.get(url, timeout=10)
+        r = requests.get(url, timeout=5)
         r.raise_for_status()
         return r.json()
     except requests.exceptions.JSONDecodeError as e:
