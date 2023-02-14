@@ -69,7 +69,7 @@ def write_data(instance, peers, i_file, g_file):
         f.write(instance.encode('unicode_escape').decode() + '\n')
 
 
-def crawl_peers(name, known, i_file, g_file):
+def crawl_peers(name, known, i_file, g_file, z_file):
     """
     get peers, if peers are not on the know list, scan to read their peers
     repeat crawling down the peers - until all are known
@@ -89,6 +89,10 @@ def crawl_peers(name, known, i_file, g_file):
                                               x.startswith("192.")])]
         if peers:  # don't save data without peers - indicates an issue
             write_data(instance, peers, i_file, g_file)
+        # todo: create a naughty list and save it for domains not to scan...don't scan domains with no peers
+        else:
+            with open(z_file, 'a') as f:
+                f.write(instance + '\n')
         new_unknown_peers = set(peers) - known
         unknown.update(new_unknown_peers)
         print(f'{instance} Number of peers: {len(peers)}; Number unknown {len(unknown)}')
@@ -103,12 +107,13 @@ def main():
     instances_file.unlink(missing_ok=True)
     graph_file = Path('graph.txt')
     graph_file.unlink(missing_ok=True)
+    zero_peers_file = Path('zero_peers.txt')
 
     instances = ['mastodon.social']    #['🍺🌯.to']
 
     known = set(instances)
     for mi in instances:
-        crawl_peers(mi, known, instances_file, graph_file)
+        crawl_peers(mi, known, instances_file, graph_file, zero_peers_file)
     with open('out_mastodon_instances.txt', 'w') as f:
         json.dump(list(known), f)
     print('Done!')
