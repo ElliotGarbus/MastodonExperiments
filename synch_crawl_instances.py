@@ -62,11 +62,11 @@ def get_peers(name):
         raise e
 
 def write_data(instance, peers, i_file, g_file):
-    data = {instance: peers}
+    # data = {instance: peers}  # store graph data
     # with open(g_file, 'a') as f:
     #     s = json.dumps(data)
     #     f.write(s + '\n')
-    with open(i_file, 'a') as f:
+    with open(i_file, 'a') as f: # store instances
         f.write(instance.encode('unicode_escape').decode() + '\n')
 
 
@@ -76,6 +76,7 @@ def crawl_peers(name, known, i_file, g_file, z_file):
     repeat crawling down the peers - until all are known
     """
     unknown = {name}
+    zero_peers = {}
     unknowns_written = False
     while unknown:
         instance = unknown.pop()
@@ -89,12 +90,14 @@ def crawl_peers(name, known, i_file, g_file, z_file):
                                               x.endswith('repl.co'),
                                               x.endswith('gab.best'),
                                               x.endswith('ngrok.io'),
+                                              x.endswith('cispa.saarland'),
                                               x.startswith("192."),
                                               x.startswith('CQIA4V')])]
         if peers:  # don't save data without peers - indicates an issue
             write_data(instance, peers, i_file, g_file)
         # naughty list -- domains not to scan...don't scan domains with no peers
-        else:
+        elif instance not in zero_peers:
+            zero_peers.add(instance)
             with open(z_file, 'a') as f:
                 f.write(instance.encode('unicode_escape').decode() + '\n')
         new_unknown_peers = set(peers) - known
