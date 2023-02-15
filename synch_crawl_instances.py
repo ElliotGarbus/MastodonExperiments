@@ -52,7 +52,7 @@ def get_peers(name):
         return []
     except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError,
             requests.exceptions.ReadTimeout, requests.exceptions.TooManyRedirects,
-            requests.exceptions.ChunkedEncodingError) as e:
+            requests.exceptions.ChunkedEncodingError, requests.exceptions.InvalidURL) as e:
         logging.exception(f'{name} {url} {e}')
         print(f'{url} {name} {e}')
         return []
