@@ -76,7 +76,6 @@ def crawl_peers(name, known, i_file, g_file, z_file):
     repeat crawling down the peers - until all are known
     """
     unknown = {name}
-    zero_peers = {}
     unknowns_written = False
     while unknown:
         instance = unknown.pop()
@@ -96,8 +95,7 @@ def crawl_peers(name, known, i_file, g_file, z_file):
         if peers:  # don't save data without peers - indicates an issue
             write_data(instance, peers, i_file, g_file)
         # naughty list -- domains not to scan...don't scan domains with no peers
-        elif instance not in zero_peers:
-            zero_peers.add(instance)
+        else:
             with open(z_file, 'a') as f:
                 f.write(instance.encode('unicode_escape').decode() + '\n')
         new_unknown_peers = set(peers) - known
