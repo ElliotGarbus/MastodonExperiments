@@ -1,8 +1,13 @@
+print('reading data...', end='')
 with open('zero_peers.txt') as f:
     peers = f.readlines()
-
-clean = [p for p in peers if not p.startswith('CQIA4VV2')]
-
+print('data read')
+clean = [p for p in set(peers) if not any([p.endswith('.cispa.saarland\n'),
+                                          p.endswith('.ngrok.io\n')])]
+print('Cleaned')
+clean.sort()
+print('sorted')
 with open('cleaned_zero_peers.txt', 'w') as f:
-    for i in clean:
-        f.writelines(clean)
+    f.writelines(clean)
+print('written')
+
