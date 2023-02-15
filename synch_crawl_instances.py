@@ -10,24 +10,14 @@ repeat until there are no unknowns in this "thread"
 when complete update know and write the file
 """
 
-
 import json
 import logging
-# import warnings
-from urllib.parse import urlparse, urlunparse
 from pathlib import Path
+from urllib.parse import urlparse, urlunparse
 
 import requests
 from wakepy import keepawake
 
-# import httpx
-# import trio
-# from tenacity import (AsyncRetrying, stop_after_attempt, TryAgain, wait_fixed, after_log,
-#                       retry_if_exception_type, RetryError)
-# from trio import TrioDeprecationWarning
-#
-# # turn off deprecation warning issue with a httpx dependency, anyio
-# warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
 def convert_idna_address(url: str) -> str:
     parsed_url = urlparse(url)
@@ -38,8 +28,6 @@ def get_peers(name):
     print(f'Get peers from {name} ')
     url = convert_idna_address(f"https://{name}/api/v1/instance/peers")
     # properly encode urls that have emoji characters or other unicode
-    # url = f"https://{name}/api/v1/instance/peers"
-    # print(f'{url=}')
     try:
         r = requests.get(url, timeout=5)
         r.raise_for_status()
@@ -61,12 +49,13 @@ def get_peers(name):
         print(f'{url} {name} {e}')
         raise e
 
+
 def write_data(instance, peers, i_file, g_file):
     # data = {instance: peers}  # store graph data
     # with open(g_file, 'a') as f:
     #     s = json.dumps(data)
     #     f.write(s + '\n')
-    with open(i_file, 'a') as f: # store instances
+    with open(i_file, 'a') as f:  # store instances
         f.write(instance.encode('unicode_escape').decode() + '\n')
 
 
@@ -109,8 +98,6 @@ def crawl_peers(name, known, i_file, g_file, z_file):
             unknowns_written = True
 
 
-
-
 def main():
     logging.basicConfig(filename='rootlog.log', level=logging.DEBUG)
     # with open('mastodon_instances.txt') as f:  # todo: add exception handling
@@ -122,7 +109,7 @@ def main():
     graph_file.unlink(missing_ok=True)
     zero_peers_file = Path('zero_peers.txt')
 
-    instances = ['mastodon.social']    #['🍺🌯.to']
+    instances = ['mastodon.social']  # ['🍺🌯.to']
     known = set(instances)
 
     # if zero_peers_file exists, add them to known set.
