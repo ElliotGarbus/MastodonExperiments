@@ -40,7 +40,8 @@ def get_peers(name):
         return []
     except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError,
             requests.exceptions.ReadTimeout, requests.exceptions.TooManyRedirects,
-            requests.exceptions.ChunkedEncodingError, requests.exceptions.InvalidURL) as e:
+            requests.exceptions.ChunkedEncodingError, requests.exceptions.InvalidURL,
+            requests.exceptions.InvalidSchema) as e:
         logging.exception(f'{name} {url} {e}')
         print(f'{url} {name} {e}')
         return []
@@ -79,8 +80,13 @@ def crawl_peers(name, known, i_file, g_file, z_file):
                                               x.endswith('gab.best'),
                                               x.endswith('ngrok.io'),
                                               x.endswith('cispa.saarland'),
+                                              x.endswith('.local'),
                                               x.startswith("192."),
-                                              x.startswith('CQIA4V')])]
+                                              ':' in x,
+                                              len(x.split('.')[0]) >= 40,
+                                              x.split('.')[0].isupper(),
+                                              len(x) == 1,  # single emoji
+                                              ])]
         if peers:  # don't save data without peers - indicates an issue
             write_data(instance, peers, i_file, g_file)
         # naughty list -- domains not to scan...don't scan domains with no peers
