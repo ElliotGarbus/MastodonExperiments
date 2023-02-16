@@ -10,6 +10,8 @@ repeat until there are no unknowns in this "thread"
 when complete update know and write the file
 """
 
+# todo: Add full state save/restore, enable resuming runs
+
 import json
 import logging
 from pathlib import Path
@@ -48,7 +50,7 @@ def get_peers(name):
     except Exception as e:
         logging.exception(f'{name} {url} {e}')
         print(f'{url} {name} {e}')
-        raise e
+        return []
 
 
 def write_data(instance, peers, i_file, g_file):
@@ -83,6 +85,7 @@ def crawl_peers(name, known, i_file, g_file, z_file):
                                               x.endswith('.local'),
                                               x.startswith("192."),
                                               ':' in x,
+                                              '..' in x,
                                               len(x.split('.')[0]) >= 40,
                                               x.split('.')[0].isupper(),
                                               len(x) == 1,  # single emoji
@@ -119,6 +122,7 @@ def main():
     known = set(instances)
 
     # if zero_peers_file exists, add them to known set.
+    # todo create functions for handling zero_peers file - need to handle unicode escape on read/write
     if zero_peers_file.exists():
         print('loading zero peers file...', end='')
         with open(zero_peers_file) as f:
