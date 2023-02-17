@@ -151,10 +151,10 @@ async def main():
     graph_file.unlink(missing_ok=True)
     zero_peers_file = Path('zero_peers.txt')
 
-    # with open('seed_instances.json') as f:  # todo: add exception handling
-    #     instances = json.load(f)
+    with open('seed_instances.json') as f:  # todo: add exception handling
+        instances = json.load(f)
 
-    instances = ['🍺🌯.to']
+    # instances = ['🍺🌯.to']
 
     known = set(instances)
     # if zero_peers_file exists, add them to known set.
