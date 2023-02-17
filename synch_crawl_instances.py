@@ -132,8 +132,6 @@ def main():
 
     for mi in instances:
         crawl_peers(mi, known, instances_file, graph_file, zero_peers_file)
-    with open('out_mastodon_instances.txt', 'w') as f:
-        json.dump(list(known), f)
     print('Done!')
 
 
