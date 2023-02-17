@@ -26,13 +26,19 @@ from wakepy import keepawake
 # turn off deprecation warning issue with a httpx dependency, anyio
 warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
-# todo: Add full state save/restore, enable resuming runs
+# todo: Add full state save/restore, enable resuming runs - if issues with bad data arise...
 
 def convert_idna_address(url: str) -> str:
     parsed_url = urlparse(url)
     return urlunparse(parsed_url._replace(netloc=parsed_url.netloc.encode("idna").decode("ascii")))
 
 def get_peers_sync(url):
+    """
+    This function is a work-around for a bug in httpx.  Httpx does not work properly with emoji in the url
+    fall back to requests if an invalid code point is detected (emoji in url)
+    :param url:
+    :return: list of peers
+    """
     print(f'Get peers from {url} ')
     # properly encode urls that have emoji characters or other unicode
     try:
