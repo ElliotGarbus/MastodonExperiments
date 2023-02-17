@@ -17,6 +17,7 @@ clean = [p for p in set(peers) if not any([p.endswith('.cispa.saarland\n'),
                                            p.split('.')[0].isupper(),
                                            ])]
 print('Cleaned')
+clean = list(set(clean)) # remove dups
 clean.sort()
 print('sorted')
 with open('cleaned_zero_peers.txt', 'w') as f:
