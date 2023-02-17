@@ -86,9 +86,9 @@ def crawl_peers(name, known, i_file, g_file, z_file):
                                               x.startswith("192."),
                                               ':' in x,
                                               '..' in x,
+                                              '.' not in x,
                                               len(x.split('.')[0]) >= 40,
                                               x.split('.')[0].isupper(),
-                                              len(x) == 1,  # single emoji
                                               ])]
         if peers:  # don't save data without peers - indicates an issue
             write_data(instance, peers, i_file, g_file)
