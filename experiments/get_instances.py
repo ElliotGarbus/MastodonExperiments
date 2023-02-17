@@ -1,6 +1,7 @@
 # users instances.social api to access a list of servers https://instances.social/api/doc/
 import httpx
 from mastodon_instances_key import mi_info
+import json
 
 
 """
@@ -23,6 +24,10 @@ def get_instances(n):
 
 
 if __name__ == '__main__':
-    n = get_instances(5)
-    print(n)
+    instances = get_instances(500)
+    print(instances)
+    with open('../seed_instances.json', 'w') as f:
+        json.dump(instances, f)
+
+
 
