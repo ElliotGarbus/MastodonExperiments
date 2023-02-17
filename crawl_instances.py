@@ -101,14 +101,14 @@ def write_data(instance, peers, i_file, g_file):
         f.write(instance.encode('unicode_escape').decode() + '\n')
 
 
-async def crawl_peers(name, known, i_file, g_file, z_file):
+async def crawl_peers(name, known, unknown, i_file, g_file, z_file):
     """
     get peers, if peers are not on the know list, scan to read their peers
     repeat crawling down the peers - until all are known
 
     i_file is output, g_file to create graph, z for zero_peers
     """
-    unknown = {name}
+    unknown.add(name)
     unknowns_written = False
     while unknown:
         instance = unknown.pop()
@@ -163,6 +163,7 @@ async def main():
     # instances = ['🍺🌯.to']
 
     known = set(instances)
+    unknown = set() # set of not yet scanned instances
     # if zero_peers_file exists, add them to known set.
     # todo create functions for handling zero_peers file - need to handle unicode escape on read/write
     if zero_peers_file.exists():
@@ -174,7 +175,7 @@ async def main():
 
     async with trio.open_nursery() as nursery:
         for mi in instances:
-            nursery.start_soon(crawl_peers, mi, known, instances_file, graph_file, zero_peers_file)
+            nursery.start_soon(crawl_peers, mi, known, unknown, instances_file, graph_file, zero_peers_file)
     print('Done!')
 
 
