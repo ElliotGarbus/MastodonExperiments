@@ -26,7 +26,7 @@ def get_info_sync(url):
         r.raise_for_status()
         return r.json()
     except requests.exceptions.JSONDecodeError as e:
-        logging.error(f'JSON Error: {e}')
+        logging.error(f'JSON Error: {e} {r.text}')
         return None
     except requests.exceptions.HTTPError as e:
         logging.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
