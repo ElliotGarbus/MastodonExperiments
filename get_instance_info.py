@@ -54,7 +54,7 @@ async def get_info(name):
             r.raise_for_status()
             return r.json()
         except json.JSONDecodeError as e:
-            logging.error(f'JSON Error: {e}')
+            logging.error(f'JSON Error: {e} {r.text}')
             return None
         except httpx.HTTPStatusError as e:
             logging.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
@@ -85,7 +85,7 @@ async def get_info_task(instances, outfile):
 async def main():
     logfile = Path('get_instance_info.log')
     logfile.unlink(missing_ok=True)
-    logging.basicConfig(filename=logfile, level=logging.DEBUG)
+    logging.basicConfig(filename=logfile, level=logging.ERROR)
 
     outfile = Path('instance_info.txt')
     outfile.unlink(missing_ok=True)
