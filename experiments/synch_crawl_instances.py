@@ -108,15 +108,15 @@ def crawl_peers(name, known, i_file, g_file, z_file):
 
 
 def main():
-    logging.basicConfig(filename='rootlog.log', level=logging.DEBUG)
+    logging.basicConfig(filename='../rootlog.log', level=logging.DEBUG)
     # with open('mastodon_instances.txt') as f:  # todo: add exception handling
     #     instances = json.load(f)
 
-    instances_file = Path('mastodon_instances.txt')
+    instances_file = Path('../mastodon_instances.txt')
     instances_file.unlink(missing_ok=True)
     graph_file = Path('graph.txt')
     graph_file.unlink(missing_ok=True)
-    zero_peers_file = Path('zero_peers.txt')
+    zero_peers_file = Path('../zero_peers.txt')
 
     instances = ['mastodon.social']  # ['🍺🌯.to']
     known = set(instances)
