@@ -152,7 +152,7 @@ async def crawl_peers(name, known, unknown, i_file, g_file, z_file):
 async def main():
     logfile = Path('rootlog.log')
     logfile.unlink(missing_ok=True)
-    logging.basicConfig(filename=logfile, level=logging.DEBUG)
+    logging.basicConfig(filename=logfile, level=logging.ERROR)
     instances_file = Path('mastodon_instances.txt')
     instances_file.unlink(missing_ok=True)
     graph_file = Path('graph.txt')
