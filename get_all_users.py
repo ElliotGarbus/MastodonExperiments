@@ -91,7 +91,7 @@ class MastodonInstance:
                                                        after=after_log(self.logger, logging.DEBUG)):
                         with attempt:
                             start = trio.current_time()
-                            r = await client.get(url, params=next(self.params_g), timeout=180)  # allow three minutes
+                            r = await client.get(url, params=next(self.params_g), timeout=10)
                             if r.status_code == 503 or (self.name == 'mastodon.social' and r.status_code != 200):
                                 raise TryAgain
                             r.raise_for_status()
