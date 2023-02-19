@@ -1,13 +1,11 @@
-# visit all known instances, identify new peers, and scan for new instances
+# visit instances, identify new peers, and scan for new instances
 
 """
-start with a file that contains a list of know instances, and a set that contains the known instances
-for each instance get its peers
+start with a file that contains a list of know instances, convert to a set called unknown
+for each instance get its peers, once scanned add that instance to the know set
 find the peers that are not known, put them in the unknown set.
-add the unknows to the know set
 for each unknown, get the peers
-repeat until there are no unknowns in this "thread"
-when complete update know and write the file
+repeat until there are no unknowns in this "task"
 """
 
 import json
@@ -101,20 +99,22 @@ def write_data(instance, peers, i_file, g_file):
         f.write(instance.encode('unicode_escape').decode() + '\n')
 
 
-async def crawl_peers(name, known, unknown, i_file, g_file, z_file):
+async def crawl_peers(known, unknown, i_file, g_file, z_file):
     """
     get peers, if peers are not on the know list, scan to read their peers
     repeat crawling down the peers - until all are known
 
     i_file is output, g_file to create graph, z for zero_peers
     """
-    unknown.add(name)
     unknowns_written = False
     while unknown:
         instance = unknown.pop()
         known.add(instance)
         peers = await get_peers(instance)
         # filter out error or odd conditions from peers list
+        if not isinstance(peers, list):
+            logging.error(f'{instance} did not return a list')
+            peers = []
         while None in peers:  # some sites have a trailing None in the list
             peers.remove(None)
         peers = [x for x in peers if not any([x.endswith('activitypub-troll.cf'),
@@ -147,10 +147,11 @@ async def crawl_peers(name, known, unknown, i_file, g_file, z_file):
             with open('unknowns.txt', 'w') as f:
                 f.writelines(data)
             unknowns_written = True
+    print(f'task completed {instance}')
 
 
 async def main():
-    logfile = Path('rootlog.log')
+    logfile = Path('crawl_instances_log.log')
     logfile.unlink(missing_ok=True)
     logging.basicConfig(filename=logfile, level=logging.ERROR)
     instances_file = Path('mastodon_instances.txt')
@@ -160,12 +161,12 @@ async def main():
     zero_peers_file = Path('zero_peers.txt')
 
     with open('seed_instances.json') as f:  # todo: add exception handling
-        instances = json.load(f)
+        seed_instances = json.load(f)
 
     # instances = ['🍺🌯.to']
 
-    known = set(instances)
-    unknown = set() # set of not yet scanned instances
+    known = set()
+    unknown = set(seed_instances) # set of not yet scanned instances
     # if zero_peers_file exists, add them to known set.
     # todo create functions for handling zero_peers file - need to handle unicode escape on read/write
     if zero_peers_file.exists():
@@ -176,8 +177,8 @@ async def main():
         print('completed')
 
     async with trio.open_nursery() as nursery:
-        for mi in instances:
-            nursery.start_soon(crawl_peers, mi, known, unknown, instances_file, graph_file, zero_peers_file)
+        for _ in range(250):
+            nursery.start_soon(crawl_peers, known, unknown, instances_file, graph_file, zero_peers_file)
     print('Done!')
 
 
