@@ -70,7 +70,7 @@ async def get_peers(name):
     # properly encode urls that have emoji characters or other unicode
     async with httpx.AsyncClient() as client:
         try:
-            r = await client.get(url, timeout=180)  # allow three minutes
+            r = await client.get(url, timeout=10)
             r.raise_for_status()
             return r.json()
         except json.JSONDecodeError as e:
@@ -89,7 +89,7 @@ async def get_peers(name):
         except Exception as e:
             logging.exception(f'{name} {url} {e}')
             print(f'UNKNOWN EXCEPTION: {url} {name} {e}')
-            raise e
+            return []
 
 
 def write_data(instance, peers, i_file, g_file):
