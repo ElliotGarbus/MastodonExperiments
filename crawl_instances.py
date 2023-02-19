@@ -24,11 +24,13 @@ from wakepy import keepawake
 # turn off deprecation warning issue with a httpx dependency, anyio
 warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
+
 # todo: Add full state save/restore, enable resuming runs - if issues with bad data arise...
 
 def convert_idna_address(url: str) -> str:
     parsed_url = urlparse(url)
     return urlunparse(parsed_url._replace(netloc=parsed_url.netloc.encode("idna").decode("ascii")))
+
 
 def get_peers_sync(url):
     """
@@ -77,7 +79,7 @@ async def get_peers(name):
         except httpx.HTTPStatusError as e:
             logging.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
             return []
-        except (httpx.RequestError) as e:
+        except httpx.RequestError as e:
             logging.error(f'Connection Error {e} on {url}')
             return []
         except InvalidCodepoint as e:
@@ -166,7 +168,7 @@ async def main():
     # instances = ['🍺🌯.to']
 
     known = set()
-    unknown = set(seed_instances) # set of not yet scanned instances
+    unknown = set(seed_instances)  # set of not yet scanned instances
     # if zero_peers_file exists, add them to known set.
     # todo create functions for handling zero_peers file - need to handle unicode escape on read/write
     if zero_peers_file.exists():
