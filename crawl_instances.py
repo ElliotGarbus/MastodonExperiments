@@ -101,7 +101,6 @@ def write_data(instance, peers, i_file, g_file):
     with open(i_file, 'a') as f:  # store instances
         f.write(instance.encode('unicode_escape').decode() + '\n')
 
-exec_times = {} # debug hack
 
 async def crawl_peers(task_id, known, unknown, i_file, g_file, z_file):
     """
@@ -110,13 +109,9 @@ async def crawl_peers(task_id, known, unknown, i_file, g_file, z_file):
 
     i_file is output, g_file to create graph, z for zero_peers
     """
-    global exec_times
-
     unknowns_written = False
-    exec_times[task_id] = {'start': f'{datetime.now():%I:%M:%S}', 'length': len(unknown)}
     while unknown:
         instance = unknown.pop()
-        exec_times[task_id].update({'last instance': f'{instance}'})  # debug hack
         known.add(instance)
         if 'sleeping.town' in instance:  # debug hack
             logging.info(f'{instance} calling get_peers()')
@@ -161,15 +156,12 @@ async def crawl_peers(task_id, known, unknown, i_file, g_file, z_file):
             with open('unknowns.txt', 'w') as f:
                 f.writelines(data)
             unknowns_written = True
-    exec_times[task_id].update({'stop': f'{datetime.now():%I:%M:%S}'}) # debug hack
-    with open('debug_crawl.json', 'w') as f:
-        json.dump(exec_times, f, indent=4)
 
 
 async def main():
     logfile = Path('crawl_instances_log.log')
     logfile.unlink(missing_ok=True)
-    logging.basicConfig(filename=logfile, level=logging.INFO)
+    logging.basicConfig(filename=logfile, level=logging.ERROR)
     instances_file = Path('mastodon_instances.txt')
     instances_file.unlink(missing_ok=True)
     graph_file = Path('graph.txt')
@@ -179,9 +171,7 @@ async def main():
     with open('seed_instances.json') as f:
         seed_instances = json.load(f)
 
-
     # seed_instances = ['🍺🌯.to']  # test case for invalid url in httpx
-    # seed_instances = get_peers_sync("https://mastodon.social/api/v1/instance/peers")
 
     known = set()
     unknown = set(seed_instances)  # set of not yet scanned instances
