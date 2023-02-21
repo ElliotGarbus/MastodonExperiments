@@ -10,6 +10,7 @@ from tenacity import (AsyncRetrying, stop_after_attempt, TryAgain, wait_fixed, a
                       retry_if_exception_type, RetryError)
 from trio import TrioDeprecationWarning
 from wakepy import keepawake
+from idna.core import InvalidCodepoint
 
 from mastodon_instances_key import mi_info
 
@@ -42,7 +43,7 @@ def delete_files(p_dir):
 class MastodonInstance:
     def __init__(self, name, results_dir, log_dir):
         self.name = name
-        fn = self.name.replace('.', '_') + '.txt'
+        fn = self.name.replace('.', '_').replace('/', '_') + '.txt'
         self.data_fn = results_dir / fn
         log_fn = log_dir / fn
         self.logger = logging.getLogger(name)
@@ -118,16 +119,24 @@ async def main():
     results_dir = Path('results')
     results_dir.mkdir(exist_ok=True)
     delete_files(results_dir)
-    print('getting instances')
-    instances = get_instances(0)  # 0 is all instances
-    print('instances received')
-    mis = []
-    for instance in instances:
-        mis.append(MastodonInstance(instance['name'], results_dir, log_dir))
 
-    async with trio.open_nursery() as nursery:
-        for mi in mis:
-            nursery.start_soon(mi.get_users)
+    instance_file = Path('mastodon_instances.txt')
+    if instance_file.exists():
+        with open(instance_file) as f:
+            instances = f.read().splitlines()
+        print('instances read from file')
+    else:
+        instances = [instance['name'] for instance in get_instances(0)]  # 0 is all instances
+        print('instances received from instances.social')
+
+    # create chucks - number of servers to work simultaneously, avoid too many open files
+    chunk_size = 5000
+    chunks = [instances[i: i + chunk_size] for i in range(0, len(instances), chunk_size)]
+    for chunk in chunks:
+        mis = [MastodonInstance(instance, results_dir, log_dir) for instance in chunk]
+        async with trio.open_nursery() as nursery:
+            for mi in mis:
+                nursery.start_soon(mi.get_users)
     print('Done!')
 
 
