@@ -13,6 +13,7 @@ import logging
 from pathlib import Path
 import warnings
 from urllib.parse import urlparse, urlunparse
+from datetime import datetime
 
 import httpx
 from idna.core import InvalidCodepoint
@@ -42,7 +43,7 @@ def get_peers_sync(url):
     print(f'Get peers from {url} ')
     # properly encode urls that have emoji characters or other unicode
     try:
-        r = requests.get(url, timeout=10)
+        r = requests.get(url, timeout=30)
         r.raise_for_status()
         return r.json()
     except requests.exceptions.JSONDecodeError as e:
@@ -59,7 +60,7 @@ def get_peers_sync(url):
         print(f'{url} {e}')
         return []
     except Exception as e:
-        logging.exception(f'{url} {e}')
+        logging.exception(f'UNKNOWN EXCEPTION{url} {e}')
         print(f'{url}  {e}')
         return []
 
@@ -68,28 +69,28 @@ async def get_peers(name):
     print(f'Get peers from {name} ')
     url = convert_idna_address(f"https://{name}/api/v1/instance/peers")
     # properly encode urls that have emoji characters or other unicode
-    async with httpx.AsyncClient() as client:
-        try:
+    try:
+        async with httpx.AsyncClient() as client:
             r = await client.get(url, timeout=10)
             r.raise_for_status()
             return r.json()
-        except json.JSONDecodeError as e:
-            logging.error(f'JSON Error: {e}')
-            return []
-        except httpx.HTTPStatusError as e:
-            logging.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
-            return []
-        except httpx.RequestError as e:
-            logging.error(f'Connection Error {e} on {url}')
-            return []
-        except InvalidCodepoint as e:
-            print(f'Invalid URL: {url}')
-            logging.error(f'{e} {url}')
-            return get_peers_sync(url)
-        except Exception as e:
-            logging.exception(f'{name} {url} {e}')
-            print(f'UNKNOWN EXCEPTION: {url} {name} {e}')
-            return []
+    except json.JSONDecodeError as e:
+        logging.error(f'JSON Error: {e}')
+        return []
+    except httpx.HTTPStatusError as e:
+        logging.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
+        return []
+    except httpx.RequestError as e:
+        logging.error(f'Connection Error {e} on {url}')
+        return []
+    except InvalidCodepoint as e:
+        print(f'Invalid URL: {url}')
+        logging.error(f'{e} {url}')
+        return get_peers_sync(url)
+    except Exception as e:
+        logging.exception(f'{name} {url} {e}')
+        print(f'UNKNOWN EXCEPTION: {url} {name} {e}')
+        return []
 
 
 def write_data(instance, peers, i_file, g_file):
@@ -100,19 +101,29 @@ def write_data(instance, peers, i_file, g_file):
     with open(i_file, 'a') as f:  # store instances
         f.write(instance.encode('unicode_escape').decode() + '\n')
 
+exec_times = {} # debug hack
 
-async def crawl_peers(known, unknown, i_file, g_file, z_file):
+async def crawl_peers(task_id, known, unknown, i_file, g_file, z_file):
     """
     get peers, if peers are not on the know list, scan to read their peers
     repeat crawling down the peers - until all are known
 
     i_file is output, g_file to create graph, z for zero_peers
     """
+    global exec_times
+
     unknowns_written = False
+    exec_times[task_id] = {'start': f'{datetime.now():%I:%M:%S}', 'length': len(unknown)}
     while unknown:
         instance = unknown.pop()
+        exec_times[task_id].update({'last instance': f'{instance}'})  # debug hack
         known.add(instance)
+        if 'sleeping.town' in instance:  # debug hack
+            logging.info(f'{instance} calling get_peers()')
         peers = await get_peers(instance)
+        if 'sleeping.town' in instance:  # debug hack
+            logging.info(f'{instance} returned {peers}')
+
         # filter out error or odd conditions from peers list
         if not isinstance(peers, list):
             logging.error(f'{instance} did not return a list')
@@ -127,6 +138,7 @@ async def crawl_peers(known, unknown, i_file, g_file, z_file):
                                               x.endswith('cispa.saarland'),
                                               x.endswith('.local'),
                                               x.startswith("192."),
+                                              x in ('sleeping.town', 'mastodon.sleeping.town'),
                                               ':' in x,
                                               '..' in x,
                                               '.' not in x,
@@ -143,44 +155,47 @@ async def crawl_peers(known, unknown, i_file, g_file, z_file):
         unknown.update(new_unknown_peers)
         print(f'{instance} Number of peers: {len(peers)}; Number unknown {len(unknown)}')
         if not unknowns_written and len(unknown) >= 50_000:
-            # write list of unknowns
+            # write list of unknowns, this helps to identify "junk sites"
             # todo: save all state and exit()
             data = [d.encode('unicode_escape').decode() + '\n' for d in list(unknown)]
             with open('unknowns.txt', 'w') as f:
                 f.writelines(data)
             unknowns_written = True
-    print(f'task completed {instance}')
+    exec_times[task_id].update({'stop': f'{datetime.now():%I:%M:%S}'}) # debug hack
+    with open('debug_crawl.json', 'w') as f:
+        json.dump(exec_times, f, indent=4)
 
 
 async def main():
     logfile = Path('crawl_instances_log.log')
     logfile.unlink(missing_ok=True)
-    logging.basicConfig(filename=logfile, level=logging.ERROR)
+    logging.basicConfig(filename=logfile, level=logging.INFO)
     instances_file = Path('mastodon_instances.txt')
     instances_file.unlink(missing_ok=True)
     graph_file = Path('graph.txt')
     graph_file.unlink(missing_ok=True)
     zero_peers_file = Path('zero_peers.txt')
 
-    with open('seed_instances.json') as f:  # todo: add exception handling
+    with open('seed_instances.json') as f:
         seed_instances = json.load(f)
 
-    # instances = ['🍺🌯.to']
+
+    # seed_instances = ['🍺🌯.to']  # test case for invalid url in httpx
+    # seed_instances = get_peers_sync("https://mastodon.social/api/v1/instance/peers")
 
     known = set()
     unknown = set(seed_instances)  # set of not yet scanned instances
     # if zero_peers_file exists, add them to known set.
-    # todo create functions for handling zero_peers file - need to handle unicode escape on read/write
     if zero_peers_file.exists():
         print('loading zero peers file...', end='')
         with open(zero_peers_file) as f:
             zp = f.read().splitlines()
         known.update(zp)
         print('completed')
-
+    unknown = unknown - known
     async with trio.open_nursery() as nursery:
-        for _ in range(250):
-            nursery.start_soon(crawl_peers, known, unknown, instances_file, graph_file, zero_peers_file)
+        for task_id in range(100):
+            nursery.start_soon(crawl_peers, task_id, known, unknown, instances_file, graph_file, zero_peers_file)
     print('Done!')
 
 
