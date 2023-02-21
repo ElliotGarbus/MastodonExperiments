@@ -24,7 +24,7 @@ def get_instances(n):
 
 
 if __name__ == '__main__':
-    instances = get_instances(500)
+    instances = get_instances(200)
     print(instances)
     with open('../seed_instances.json', 'w') as f:
         json.dump(instances, f)
