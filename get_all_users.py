@@ -104,7 +104,7 @@ class MastodonInstance:
                     self.logger.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
                     self.finished = True
                 except httpx.RequestError as e:
-                    self.logger.error(f'Connection Error {e} on {url}')
+                    self.logger.error(f'Request Error {e} on {url}')
                     self.finished = True
                 except RetryError:
                     self.logger.error('Finished retries with no response')
@@ -115,6 +115,7 @@ class MastodonInstance:
                     self.finished = True
         self.file_handler.close()
 
+
 async def worker(instances, results_dir, log_dir):
     while instances:
         instance = instances.pop()
@@ -123,7 +124,6 @@ async def worker(instances, results_dir, log_dir):
 
 
 async def main():
-    # logging.basicConfig(filename='rootlog.log', level=logging.DEBUG)
     log_dir = Path('log')
     log_dir.mkdir(exist_ok=True)
     delete_files(log_dir)
