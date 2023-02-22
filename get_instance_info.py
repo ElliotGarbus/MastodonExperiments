@@ -76,7 +76,7 @@ async def get_info_task(instances, outfile):
     while instances:
         name = instances.pop()
         info = await get_info(name)
-        if info and 'error' not in info:
+        if info and 'domain' in info:  # domain field indicating a valid response
             with open(outfile, 'a') as f:
                 json.dump(info, f)
                 f.write('\n')
