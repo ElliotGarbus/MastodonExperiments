@@ -69,8 +69,13 @@ class MastodonInstance:
         with open(self.data_fn, 'a') as f:  # only save unique data
             for user in users:
                 # print(user)
-                if user['url'] in self.unique_url:
-                    continue
+                try:
+                    if user['url'] in self.unique_url:
+                        continue
+                except TypeError as e:
+                    logging.error(f'TypeError: {e} {type(user)=} {user}') # not a user record
+                    self.finished = True
+                    return
                 self.unique_url.add(user['url'])
                 json.dump(user, f)
                 f.write('\n')
@@ -110,8 +115,8 @@ class MastodonInstance:
                     self.logger.error('Finished retries with no response')
                     self.finished = True
                 except InvalidCodepoint as e:
-                    self.logger.error('Invalid codepoint {url}')
-                    # todo: add call to sync version here...
+                    self.logger.error('Invalid codepoint, emoji {url}')
+                    # Ignore urls with emoji
                     self.finished = True
         self.file_handler.close()
 
@@ -131,11 +136,11 @@ async def main():
     results_dir.mkdir(exist_ok=True)
     delete_files(results_dir)
 
-    instance_file = Path('mastodon_instances.txt')
+    instance_file = Path('instance_info.txt')
     if instance_file.exists():
         with open(instance_file) as f:
-            instances = f.read().splitlines()
-        print('instances read from file')
+            instances = [json.loads(x)['domain'] for x in f.read().splitlines()]
+        print(f'{len(instances)} instances read from file')
     else:
         instances = [instance['name'] for instance in get_instances(0)]  # 0 is all instances
         print('instances received from instances.social')
