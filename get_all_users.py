@@ -47,7 +47,7 @@ class MastodonInstance:
         self.data_fn = results_dir / fn
         log_fn = log_dir / fn
         self.logger = logging.getLogger(name)
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.ERROR)
         self.file_handler = logging.FileHandler(log_fn)
         formatter = logging.Formatter('{levelname}:{asctime}:{name}:{message}',
                                       style='{', datefmt='%Y-%m-%d %H:%M:%S')
@@ -73,7 +73,7 @@ class MastodonInstance:
                     if user['url'] in self.unique_url:
                         continue
                 except TypeError as e:
-                    logging.error(f'TypeError: {e} {type(user)=} {user}') # not a user record
+                    self.logger.error(f'TypeError: {e} {type(user)=} {user}') # not a user record
                     self.finished = True
                     return
                 self.unique_url.add(user['url'])
