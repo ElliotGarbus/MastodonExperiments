@@ -141,7 +141,7 @@ async def main():
         print('instances received from instances.social')
 
     async with trio.open_nursery() as nursery:
-        for _ in range(100):  # number of concurrent tasks
+        for _ in range(500):  # number of concurrent tasks
             nursery.start_soon(worker, instances, results_dir, log_dir)
     print('Done!')
 
