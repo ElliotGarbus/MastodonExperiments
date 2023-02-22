@@ -48,11 +48,11 @@ class MastodonInstance:
         log_fn = log_dir / fn
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.DEBUG)
-        file_handler = logging.FileHandler(log_fn)
+        self.file_handler = logging.FileHandler(log_fn)
         formatter = logging.Formatter('{levelname}:{asctime}:{name}:{message}',
                                       style='{', datefmt='%Y-%m-%d %H:%M:%S')
-        file_handler.setFormatter(formatter)
-        self.logger.addHandler(file_handler)
+        self.file_handler.setFormatter(formatter)
+        self.logger.addHandler(self.file_handler)
 
         self.params_g = ({'order': 'active', 'local': True, 'limit': 40, 'offset': i} for i in range(0, 100000000, 40))
         self.unique_url = set()
@@ -103,12 +103,23 @@ class MastodonInstance:
                 except httpx.HTTPStatusError as e:
                     self.logger.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
                     self.finished = True
-                except (httpx.RemoteProtocolError) as e:
+                except httpx.RequestError as e:
                     self.logger.error(f'Connection Error {e} on {url}')
                     self.finished = True
                 except RetryError:
                     self.logger.error('Finished retries with no response')
                     self.finished = True
+                except InvalidCodepoint as e:
+                    self.logger.error('Invalid codepoint {url}')
+                    # todo: add call to sync version here...
+                    self.finished = True
+        self.file_handler.close()
+
+async def worker(instances, results_dir, log_dir):
+    while instances:
+        instance = instances.pop()
+        mi = MastodonInstance(name=instance, log_dir=log_dir, results_dir=results_dir)
+        await mi.get_users()
 
 
 async def main():
@@ -129,14 +140,9 @@ async def main():
         instances = [instance['name'] for instance in get_instances(0)]  # 0 is all instances
         print('instances received from instances.social')
 
-    # create chucks - number of servers to work simultaneously, avoid too many open files
-    chunk_size = 5000
-    chunks = [instances[i: i + chunk_size] for i in range(0, len(instances), chunk_size)]
-    for chunk in chunks:
-        mis = [MastodonInstance(instance, results_dir, log_dir) for instance in chunk]
-        async with trio.open_nursery() as nursery:
-            for mi in mis:
-                nursery.start_soon(mi.get_users)
+    async with trio.open_nursery() as nursery:
+        for _ in range(100):  # number of concurrent tasks
+            nursery.start_soon(worker, instances, results_dir, log_dir)
     print('Done!')
 
 
