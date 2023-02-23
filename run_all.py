@@ -37,3 +37,7 @@ with keepawake(keep_screen_awake=False):
     print('mastodon_instances.txt - List of all servers')
     print('instance_info.txt - info records for all servers')
     print('results directory - contains files with all users per server')
+
+# todo: move timing to decorator?
+# create option to ignore emoji servers in crawl
+# make using the zero_peers file an option in crawl
