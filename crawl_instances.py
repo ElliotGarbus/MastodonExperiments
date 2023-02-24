@@ -13,7 +13,6 @@ import logging
 from pathlib import Path
 import warnings
 from urllib.parse import urlparse, urlunparse
-from datetime import datetime
 
 import httpx
 from idna.core import InvalidCodepoint
@@ -24,6 +23,10 @@ from wakepy import keepawake
 
 # turn off deprecation warning issue with a httpx dependency, anyio
 warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
+
+# some flags to control execution, do not expect them to be used
+IGNORE_EMOJI_URL = True  # used to ignore the emoji urls...
+CREATE_GRAPH = False
 
 
 # todo: Add full state save/restore, enable resuming runs - if issues with bad data arise...
@@ -41,7 +44,6 @@ def get_peers_sync(url):
     :return: list of peers
     """
     print(f'Get peers from {url} ')
-    # properly encode urls that have emoji characters or other unicode
     try:
         r = requests.get(url, timeout=30)
         r.raise_for_status()
@@ -86,6 +88,8 @@ async def get_peers(name):
     except InvalidCodepoint as e:
         print(f'Invalid URL: {url}')
         logging.error(f'{e} {url}')
+        if IGNORE_EMOJI_URL:
+            return []
         return get_peers_sync(url)
     except Exception as e:
         logging.exception(f'{name} {url} {e}')
@@ -94,15 +98,16 @@ async def get_peers(name):
 
 
 def write_data(instance, peers, i_file, g_file):
-    # data = {instance: peers}  # store graph data
-    # with open(g_file, 'a') as f:
-    #     s = json.dumps(data)
-    #     f.write(s + '\n')
+    if CREATE_GRAPH:
+        data = {instance: peers}  # store graph data
+        with open(g_file, 'a') as f:
+            s = json.dumps(data)
+            f.write(s + '\n')
     with open(i_file, 'a') as f:  # store instances
         f.write(instance.encode('unicode_escape').decode() + '\n')
 
 
-async def crawl_peers(task_id, known, unknown, i_file, g_file, z_file):
+async def crawl_peers(known, unknown, i_file, g_file, z_file):
     """
     get peers, if peers are not on the know list, scan to read their peers
     repeat crawling down the peers - until all are known
@@ -151,14 +156,13 @@ async def crawl_peers(task_id, known, unknown, i_file, g_file, z_file):
         print(f'{instance} Number of peers: {len(peers)}; Number unknown {len(unknown)}')
         if not unknowns_written and len(unknown) >= 50_000:
             # write list of unknowns, this helps to identify "junk sites"
-            # todo: save all state and exit()
             data = [d.encode('unicode_escape').decode() + '\n' for d in list(unknown)]
             with open('unknowns.txt', 'w') as f:
                 f.writelines(data)
             unknowns_written = True
 
 
-async def main():
+async def main(ignore_zero_peers=True):
     logfile = Path('crawl_instances_log.log')
     logfile.unlink(missing_ok=True)
     logging.basicConfig(filename=logfile, level=logging.ERROR)
@@ -176,7 +180,7 @@ async def main():
     known = set()
     unknown = set(seed_instances)  # set of not yet scanned instances
     # if zero_peers_file exists, add them to known set.
-    if zero_peers_file.exists():
+    if not ignore_zero_peers and zero_peers_file.exists():
         print('loading zero peers file...', end='')
         with open(zero_peers_file) as f:
             zp = f.read().splitlines()
@@ -184,8 +188,8 @@ async def main():
         print('completed')
     unknown = unknown - known
     async with trio.open_nursery() as nursery:
-        for task_id in range(100):
-            nursery.start_soon(crawl_peers, task_id, known, unknown, instances_file, graph_file, zero_peers_file)
+        for _ in range(100):
+            nursery.start_soon(crawl_peers, known, unknown, instances_file, graph_file, zero_peers_file)
     print('Done!')
 
 
