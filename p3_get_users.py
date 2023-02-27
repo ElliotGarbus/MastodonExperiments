@@ -13,7 +13,7 @@ from wakepy import keepawake
 from idna.core import InvalidCodepoint
 
 from mastodon_instances_key import mi_info
-from get_instance_info import INSTANCE_API_VERSION
+from p2_get_instance_info import INSTANCE_API_VERSION
 
 # turn off deprecation warning issue with a httpx dependency, anyio
 warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
@@ -149,7 +149,7 @@ def read_instance_file(file):
     else:
         raise ValueError(f'Invalid value {INSTANCE_API_VERSION} for INSTANCE_API_VERSION')
 
-async def main():
+async def get_users():
     log_dir = Path('log')
     log_dir.mkdir(exist_ok=True)
     delete_files(log_dir)
@@ -174,4 +174,4 @@ async def main():
 
 if __name__ == '__main__':
     with keepawake(keep_screen_awake=False):
-        trio.run(main)
+        trio.run(get_users)

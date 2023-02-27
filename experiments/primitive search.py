@@ -3,7 +3,7 @@ import json
 import webbrowser
 
 def get_user():
-    p = Path('results')
+    p = Path('../results')
     for fn in p.glob('*.*'):
         with open(fn) as f:
             for line in f:

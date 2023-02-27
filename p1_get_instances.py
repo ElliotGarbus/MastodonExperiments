@@ -162,8 +162,8 @@ async def crawl_peers(known, unknown, i_file, g_file, z_file):
             unknowns_written = True
 
 
-async def main(ignore_zero_peers=True):
-    logfile = Path('crawl_instances_log.log')
+async def get_instances(ignore_zero_peers=True):
+    logfile = Path('get_instances_log.txt')
     logfile.unlink(missing_ok=True)
     logging.basicConfig(filename=logfile, level=logging.ERROR)
     instances_file = Path('mastodon_instances.txt')
@@ -197,4 +197,4 @@ async def main(ignore_zero_peers=True):
 
 if __name__ == '__main__':
     with keepawake(keep_screen_awake=False):
-        trio.run(main)
+        trio.run(get_instances)

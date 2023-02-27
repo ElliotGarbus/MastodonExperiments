@@ -130,7 +130,7 @@ async def get_info_task(instances, outfile):
                 f.write('\n')
 
 
-async def main():
+async def get_instance_info():
     logfile = Path('get_instance_info.log')
     logfile.unlink(missing_ok=True)
     logging.basicConfig(filename=logfile, level=logging.ERROR)
@@ -147,4 +147,4 @@ async def main():
 
 
 if __name__ == '__main__':
-    trio.run(main)
+    trio.run(get_instance_info)
