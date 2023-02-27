@@ -25,11 +25,8 @@ from wakepy import keepawake
 warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
 # some flags to control execution, do not expect them to be used
-IGNORE_EMOJI_URL = True  # used to ignore the emoji urls...
-CREATE_GRAPH = False
+from flags import IGNORE_EMOJI_URL, CREATE_GRAPH
 
-
-# todo: Add full state save/restore, enable resuming runs - if issues with bad data arise...
 
 def convert_idna_address(url: str) -> str:
     parsed_url = urlparse(url)
