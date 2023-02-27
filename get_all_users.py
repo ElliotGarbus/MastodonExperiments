@@ -25,7 +25,6 @@ mi_info = {'name':'app_name',
            'token': 'token string'}
 """
 
-# todo: get instance from V1 or V2 files.
 
 def get_instances(n):
     # returns a list of servers, uses instances.social api  https://instances.social/api/doc/
