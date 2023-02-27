@@ -75,7 +75,7 @@ class MastodonInstance:
                     if user['url'] in self.unique_url:
                         continue
                 except TypeError as e:
-                    self.logger.error(f'TypeError: {e} {type(user)=} {user}') # not a user record
+                    self.logger.error(f'TypeError, not a user record: {e} {type(user)=} {user}') # not a user record
                     self.finished = True
                     return
                 self.unique_url.add(user['url'])
