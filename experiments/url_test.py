@@ -5,7 +5,7 @@ from pprint import pprint
 import os
 
 try:
-    headers = {'user_agent': os.environ['user_agent']}
+    headers = {'user-agent': os.environ['USERAGENT']}
 except KeyError:
     headers = {}
 

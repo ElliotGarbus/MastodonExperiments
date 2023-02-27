@@ -29,7 +29,7 @@ warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 from flags import IGNORE_EMOJI_URL, CREATE_GRAPH
 
 try:
-    headers = {'user_agent': os.environ['user_agent']}
+    headers = {'user-agent': os.environ['USERAGENT']}
 except KeyError:
     headers = {}
 

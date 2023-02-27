@@ -1,5 +1,14 @@
+"""
+if the instance_info.txt file is available, read the file, and get the instances
+if the instance_info.txt file is not available use https://instances.social/ to get the instances
+for each instance, use the directory api to get the user records
+store the results in the "results" directory, the file names are derived from the name of the server instance
+"""
+
+
 import json
 import logging
+import os
 import warnings
 from datetime import datetime
 from pathlib import Path
@@ -25,12 +34,17 @@ mi_info = {'name':'app_name',
            'token': 'token string'}
 """
 
+try:
+    headers = {'user-agent': os.environ['USERAGENT']}
+except KeyError:
+    headers = {}
+
 
 def get_instances(n):
     # returns a list of servers, uses instances.social api  https://instances.social/api/doc/
-    header = {'Authorization': 'Bearer ' + mi_info['token']}
+    is_headers = {'Authorization': 'Bearer ' + mi_info['token']} | headers
     params = {'count': n, 'include_down': True, 'language': 'en', 'sort_by': 'users', 'sort_order': 'desc'}
-    r = httpx.get('https://instances.social/api/1.0/instances/list', headers=header, params=params)
+    r = httpx.get('https://instances.social/api/1.0/instances/list', headers=is_headers, params=params)
     d = r.json()
     return d['instances']  # keys of interest: 'name', 'users', 'active_users'
 
@@ -98,7 +112,7 @@ class MastodonInstance:
                                                        after=after_log(self.logger, logging.DEBUG)):
                         with attempt:
                             start = trio.current_time()
-                            r = await client.get(url, params=next(self.params_g), timeout=10)
+                            r = await client.get(url, headers=headers, params=next(self.params_g), timeout=10)
                             if r.status_code == 503 or (self.name == 'mastodon.social' and r.status_code != 200):
                                 raise TryAgain
                             r.raise_for_status()
@@ -117,7 +131,7 @@ class MastodonInstance:
                     self.finished = True
                 except InvalidCodepoint as e:
                     self.logger.error('Invalid codepoint, emoji {url}')
-                    # Ignore urls with emoji
+                    # Ignore urls with emoji. get_users to work with emojis not implemented
                     self.finished = True
         self.file_handler.close()
 
