@@ -11,7 +11,7 @@ from idna.core import InvalidCodepoint
 # turn off deprecation warning issue with a httpx dependency, anyio
 warnings.filterwarnings(action='ignore', category=trio.TrioDeprecationWarning)
 
-INSTANCE_API_VERSION = 'v1'
+from flags import INSTANCE_API_VERSION
 
 def get_info_sync(url):
     """
