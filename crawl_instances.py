@@ -154,7 +154,7 @@ async def crawl_peers(known, unknown, i_file, g_file, z_file):
         new_unknown_peers = set(peers) - known
         unknown.update(new_unknown_peers)
         print(f'{instance} Number of peers: {len(peers)}; Number unknown {len(unknown)}')
-        if not unknowns_written and len(unknown) >= 50_000:
+        if not unknowns_written and len(unknown) >= 60_000:
             # write list of unknowns, this helps to identify "junk sites"
             data = [d.encode('unicode_escape').decode() + '\n' for d in list(unknown)]
             with open('unknowns.txt', 'w') as f:
@@ -186,7 +186,9 @@ async def main(ignore_zero_peers=True):
             zp = f.read().splitlines()
         known.update(zp)
         print('completed')
+    zero_peers_file.unlink(missing_ok=True)
     unknown = unknown - known
+
     async with trio.open_nursery() as nursery:
         for _ in range(100):
             nursery.start_soon(crawl_peers, known, unknown, instances_file, graph_file, zero_peers_file)
