@@ -16,7 +16,7 @@ warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
 class GetMastodonData:
     def __init__(self,  server='mastodon.social'):
-        save_dir = Path('results')
+        save_dir = Path('saved/results')
         save_dir.mkdir(exist_ok=True)
         dt = datetime.now().isoformat(timespec='seconds').replace(':', '_')  # part of fine name
         fn = server.replace('.', '_') + '_' + dt + '.txt'
@@ -121,17 +121,17 @@ class GetMastodonData:
             sys.exit(0)
 
 async def main(server, min):
-    log_dir = Path('log')
+    log_dir = Path('saved/log')
     log_dir.mkdir(exist_ok=True)
     log_fn = log_dir / (server.replace('.', '_') + '.txt')
     log_fn.unlink(missing_ok=True)
     logging.basicConfig(filename=log_fn, encoding='utf-8', level=logging.INFO)
     gmd = GetMastodonData(server=server)
     # print(f'User count: {gmd.number_of_users()}')  # unused, was for looping over user count
-    s_req = 10  # number of simultaneous requests
+    s_req = 1  # number of simultaneous requests
     with trio.move_on_after(60 * min) as cancel_scope:
         while not cancel_scope.cancelled_caught:
-            for _ in range(30): # 30 x 10 = 300 calls
+            for _ in range(300): # 30 x 10 = 300 calls
                 async with trio.open_nursery() as nursery:
                     start = trio.current_time()
                     for _ in range(s_req):  # 10 requests at a time, works without server failures on mastodon.social
@@ -141,8 +141,8 @@ async def main(server, min):
                 # target 300 call/5min, 1 call/sec... add wait to slow down to that rate
                 elapsed_time = trio.current_time() - start
                 print(f'{elapsed_time=}')
-                if elapsed_time <= 10:
-                    await trio.sleep(12 - elapsed_time)  # add some buffer to the time
+                if elapsed_time <= 2:
+                    await trio.sleep(4 - elapsed_time)  # add some buffer to the time
                 print(f'wait complete, {gmd.stats}')
     if cancel_scope.cancelled_caught:
         print('Execution Completed Normally, scheduled execution time has expired')

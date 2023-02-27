@@ -33,7 +33,7 @@ class MastodonInstance:
         self.all_users = int(all_users)
         self.name = name
         fn = self.name.replace('.', '_') + '.txt'
-        save_dir = Path('../results')
+        save_dir = Path('../saved/results')
         save_dir.mkdir(exist_ok=True)
         self.data_fn = save_dir / fn
         self.unique_url = set()
@@ -85,7 +85,7 @@ class MastodonInstance:
 
 
 async def main():
-    log_dir = Path('../log')
+    log_dir = Path('../saved/log')
     log_dir.mkdir(exist_ok=True)
     log_fn = log_dir / 'log.txt'
     log_fn.unlink(missing_ok=True)

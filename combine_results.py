@@ -3,7 +3,7 @@ import json
 from pprint import pprint
 
 all_users = []
-p = Path('results')
+p = Path('saved/results')
 for fn in p.glob('*.*'):
     with open(fn) as f:
         for line in f:
