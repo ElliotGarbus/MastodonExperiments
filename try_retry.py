@@ -27,12 +27,12 @@ class MastodonInstance:
         self.logger.addHandler(file_handler)
 
     async def get_users(self):
-        url = f"https://httpstat.us/404"
+        url = "https://httpstat.us/503"
         async with httpx.AsyncClient() as client:
             try:
                 async for attempt in AsyncRetrying(sleep=trio.sleep, stop=stop_after_attempt(3),
                                                    wait=wait_fixed(.5),
-                                                   retry=retry_if_exception_type(TryAgain),
+                                                   retry=retry_if_exception_type((TryAgain, httpx.ConnectTimeout)),
                                                    after=after_log(self.logger, logging.DEBUG)):
                     with attempt:
                         r = await client.get(url)
