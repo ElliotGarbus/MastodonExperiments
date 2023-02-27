@@ -1,5 +1,5 @@
 """
-run_all.py run all phases to collect all the mastodon user data
+px_get_mastodon_data.py run all phases to collect all the mastodon user data
 1) run p1_get_instances.py, create mastodon_instances.txt
 2) run p2_get_instance_info.py, create instance_info.txt, contains the instance records for all the instances
 3) run p3_get__users, creates the "results" directory, with the users of each instance
