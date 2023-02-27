@@ -4,5 +4,5 @@ p = Path('log')
 for fn in p.glob('*.*'):
     with open(fn) as f:
         for line in f:
-            if 'TypeError' in line:
+            if 'Error' in line:
                 print(line)
