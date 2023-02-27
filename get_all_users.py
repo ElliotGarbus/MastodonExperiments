@@ -13,6 +13,7 @@ from wakepy import keepawake
 from idna.core import InvalidCodepoint
 
 from mastodon_instances_key import mi_info
+from get_instance_info import INSTANCE_API_VERSION
 
 # turn off deprecation warning issue with a httpx dependency, anyio
 warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
@@ -24,6 +25,7 @@ mi_info = {'name':'app_name',
            'token': 'token string'}
 """
 
+# todo: get instance from V1 or V2 files.
 
 def get_instances(n):
     # returns a list of servers, uses instances.social api  https://instances.social/api/doc/
@@ -124,8 +126,27 @@ class MastodonInstance:
 async def worker(instances, results_dir, log_dir):
     while instances:
         instance = instances.pop()
-        mi = MastodonInstance(name=instance, log_dir=log_dir, results_dir=results_dir)
-        await mi.get_users()
+        if instance not in ['friendica.youhavewrites.social']:  # bad instances go here
+            mi = MastodonInstance(name=instance, log_dir=log_dir, results_dir=results_dir)
+            await mi.get_users()
+
+def read_instance_file(file):
+    """
+    read the file, convert to json, sort based on api version, remove sites with zero users
+    return list of instances sorted largest users to the smallest
+    :param file: file handle
+    :return: list of sorted instances, largest to the smallest by number of users.
+    """
+    data = [json.loads(x) for x in file.read().splitlines()]
+    if INSTANCE_API_VERSION == 'v1': # [stats][user_count]
+        instances = [x for x in data if x['stats']['user_count'] > 0]
+        instances.sort(key=lambda x:x['stats']['user_count'] )
+        return [u['uri'] for u in instances]
+
+    elif INSTANCE_API_VERSION == 'v2':
+        data.sort(key=lambda x:x['usage']['users']['active_month'], reverse=True)
+        instances = [x['domain'] for x in data if x['usage']['users']['active_month'] > 0]
+    return instances
 
 
 async def main():
@@ -139,7 +160,7 @@ async def main():
     instance_file = Path('instance_info.txt')
     if instance_file.exists():
         with open(instance_file) as f:
-            instances = [json.loads(x)['domain'] for x in f.read().splitlines()]
+            instances = read_instance_file(f)
         print(f'{len(instances)} instances read from file')
     else:
         instances = [instance['name'] for instance in get_instances(0)]  # 0 is all instances
