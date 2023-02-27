@@ -23,6 +23,7 @@ out = r.json()
 print(f'requests: {out}')
 print(r.request.headers)
 
-r = httpx.get(url, timeout=3.5)
+r = httpx.get(url, headers=headers, timeout=3.5)
 out = r.json()
 print(f'httpx: {out}')
+print(r.request.headers)
