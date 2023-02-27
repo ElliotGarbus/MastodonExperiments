@@ -84,7 +84,8 @@ def is_info_valid(info):
                  'stats' in info and
                  isinstance(info['stats']['user_count'], int) and
                  info['stats']['user_count'] and
-                 isinstance(info['uri'], str))
+                 isinstance(info['uri'], str) and
+                 ":" not in info['uri'][-5:])  # don't include uri with port number
     elif INSTANCE_API_VERSION == 'v2':
         valid = (info and 'domain' in info)
     else:
@@ -100,7 +101,7 @@ def clean_uri(info):
     :return: None, modifies data in place
     """
     if INSTANCE_API_VERSION == 'v1':
-        info['uri'] = info['uri'].replace('https://', '')
+        info['uri'] = info['uri'].replace('https://', '').replace('http://', '')
     elif INSTANCE_API_VERSION == 'v2':
         pass
     else:
