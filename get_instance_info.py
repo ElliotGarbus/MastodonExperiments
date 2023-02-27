@@ -11,7 +11,7 @@ from idna.core import InvalidCodepoint
 # turn off deprecation warning issue with a httpx dependency, anyio
 warnings.filterwarnings(action='ignore', category=trio.TrioDeprecationWarning)
 
-INSTANCE_API_VERSION = 'v1'
+INSTANCE_API_VERSION = 'v2'
 
 def get_info_sync(url):
     """
@@ -87,7 +87,18 @@ def is_info_valid(info):
                  isinstance(info['uri'], str) and
                  ":" not in info['uri'][-5:])  # don't include uri with port number
     elif INSTANCE_API_VERSION == 'v2':
-        valid = (info and 'domain' in info)
+        valid = (info and
+                 'domain' in info and
+                 'usage' in info)
+        if valid:
+            try:
+                c = info['usage']['users']['active_month']
+                if not isinstance(c, int): # 2 sites reporting as a string, not an int
+                    valid = False
+            except KeyError as e:
+                # Friendica 2023.03-dev has an incorrect key, bug reported
+                logging.error(f"invalid data record {e} {info['usage']=} {info['domain']=} {info['version']=}")
+                valid = False
     else:
         raise ValueError(f'Invalid value {INSTANCE_API_VERSION} for INSTANCE_API_VERSION')
     return valid

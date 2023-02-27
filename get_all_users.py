@@ -144,10 +144,11 @@ def read_instance_file(file):
         return [u['uri'] for u in instances]
 
     elif INSTANCE_API_VERSION == 'v2':
-        data.sort(key=lambda x:x['usage']['users']['active_month'], reverse=True)
-        instances = [x['domain'] for x in data if x['usage']['users']['active_month'] > 0]
-    return instances
-
+        instances = [x for x in data if x['usage']['users']['active_month'] > 0]
+        instances.sort(key=lambda x:x['usage']['users']['active_month'])
+        return [u['domain'] for u in instances]
+    else:
+        raise ValueError(f'Invalid value {INSTANCE_API_VERSION} for INSTANCE_API_VERSION')
 
 async def main():
     log_dir = Path('log')
