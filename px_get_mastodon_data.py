@@ -14,20 +14,50 @@ from p1_get_instances import get_instances
 from p2_get_instance_info import get_instance_info
 from p3_get_users import get_users
 
-description = 'Get the mastodon instance info and optionally user data.'
-mode_help = '"info" collects the instance info for all servers, "users" collects the info and user data. '\
-            'Defaults to "users"'
-parser = argparse.ArgumentParser(description=description)
-parser.add_argument('-m', '--mode', default='users', help=mode_help, choices=['info', 'users'])
-args = parser.parse_args()
+def cli():
+    description = 'Get the mastodon instance info and optionally user data.'
+    mode_help = '"info" collects the instance info for all servers, "users" collects the info and user data. '\
+                'Defaults to "users"'
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('-m', '--mode', default='users', help=mode_help, choices=['info', 'users'])
+    args = parser.parse_args()
+    return args.mode
 
+def print_execution_times(t):
+    # t is a dict that holds the execution times per phase
+    total_time = sum(t.values(), start=timedelta())
+    # convert to str, drop microseconds
+    total_time = str(total_time).split('.')[0]
+    for k in t:
+        t[k] = str(t[k]).split('.')[0]
+    print('=' * 80)
+    print(f'Time to get instances: {t["get_instances_time"]}')
+    print(f'Time to get instance info: {t["get_info_time"]}')
+    try:
+        print(f'Time to get all users: {t["get_users_time"]}')
+    except KeyError:
+        pass
+    print(f'Total execution time: {total_time}')
+    print('mastodon_instances.txt - List of all servers')
+    print('instance_info.txt - info records for all servers')
+    print('results directory - contains files with all users per server')
+    print('=' * 80)
+
+def consolidate_results(m):
+    # m is the execution mode either 'info' or 'users' from the cli
+    # todo: create consolidated result
+    print('Consolidating results...', end='')
+
+    print('Done!')
+    pass
 
 phases = ({'function': get_instances, 'timer_key': 'get_instances_time'},
           {'function': get_instance_info, 'timer_key': 'get_info_time'},
           {'function': get_users, 'timer_key': 'get_users_time'})
 timer = {}
 
-if args.mode == 'info':
+mode = cli()
+if mode == 'info':
     phases = phases[:2]
 
 with keepawake(keep_screen_awake=False):
@@ -37,21 +67,8 @@ with keepawake(keep_screen_awake=False):
         end = datetime.now()
         timer[phase['timer_key']] = end - start
 
-total_time = sum(timer.values(), start=timedelta())
-# convert to str, drop microseconds
-total_time = str(total_time).split('.')[0]
-for k in timer:
-    timer[k] = str(timer[k]).split('.')[0]
+print_execution_times(timer)
+consolidate_results(mode)
 
-print('=' * 80)
-print(f'Time to get instances: {timer["get_instances_time"]}')
-print(f'Time to get instance info: {timer["get_info_time"]}')
-try:
-    print(f'Time to get all users: {timer["get_users_time"]}')
-except KeyError:
-    pass
-print(f'Total execution time: {total_time}')
-print('mastodon_instances.txt - List of all servers')
-print('instance_info.txt - info records for all servers')
-print('results directory - contains files with all users per server')
-print('=' * 80)
+
+
