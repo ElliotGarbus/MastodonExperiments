@@ -3,10 +3,8 @@ for each instance on in instance list, mastodon_instances.txt issue the instance
 store the instance info in instance_info.txt
 """
 
-
 import json
 import logging
-import os
 import warnings
 from pathlib import Path
 
@@ -18,12 +16,8 @@ from idna.core import InvalidCodepoint
 # turn off deprecation warning issue with a httpx dependency, anyio
 warnings.filterwarnings(action='ignore', category=trio.TrioDeprecationWarning)
 
-from flags import INSTANCE_API_VERSION
+from flags import INSTANCE_API_VERSION, user_agent_header
 
-try:
-    headers = {'user-agent': os.environ['USERAGENT']}
-except KeyError:
-    headers = {}
 
 def get_info_sync(url):
     """
@@ -35,7 +29,7 @@ def get_info_sync(url):
     print(f'Get info from {url} ')
     # properly encode urls that have emoji characters or other unicode
     try:
-        r = requests.get(url, headers=headers, timeout=10)
+        r = requests.get(url, headers=user_agent_header, timeout=10)
         r.raise_for_status()
         return r.json()
     except requests.exceptions.JSONDecodeError as e:
@@ -63,7 +57,7 @@ async def get_info(name):
     # properly encode urls that have emoji characters or other unicode
     async with httpx.AsyncClient() as client:
         try:
-            r = await client.get(url, headers=headers, timeout=10)
+            r = await client.get(url, headers=user_agent_header, timeout=10)
             r.raise_for_status()
             return r.json()
         except json.JSONDecodeError as e:
@@ -105,7 +99,7 @@ def is_info_valid(info):
         if valid:
             try:
                 c = info['usage']['users']['active_month']
-                if not isinstance(c, int): # 2 sites reporting as a string, not an int
+                if not isinstance(c, int):  # 2 sites reporting as a string, not an int
                     valid = False
             except KeyError as e:
                 # Friendica 2023.03-dev has an incorrect key, bug reported

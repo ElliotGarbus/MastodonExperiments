@@ -10,7 +10,6 @@ repeat until there are no unknowns in this "task"
 
 import json
 import logging
-import os
 from pathlib import Path
 import warnings
 from urllib.parse import urlparse, urlunparse
@@ -26,12 +25,7 @@ from wakepy import keepawake
 warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
 
 # some flags to control execution, do not expect them to be used
-from flags import IGNORE_EMOJI_URL, CREATE_GRAPH
-
-try:
-    headers = {'user-agent': os.environ['USERAGENT']}
-except KeyError:
-    headers = {}
+from flags import IGNORE_EMOJI_URL, CREATE_GRAPH, user_agent_header
 
 
 def convert_idna_address(url: str) -> str:
@@ -48,7 +42,7 @@ def get_peers_sync(url):
     """
     print(f'Get peers from {url} ')
     try:
-        r = requests.get(url, headers=headers, timeout=30)
+        r = requests.get(url, headers=user_agent_header, timeout=30)
         r.raise_for_status()
         return r.json()
     except requests.exceptions.JSONDecodeError as e:
@@ -76,7 +70,7 @@ async def get_peers(name):
     # properly encode urls that have emoji characters or other unicode
     try:
         async with httpx.AsyncClient() as client:
-            r = await client.get(url, headers=headers, timeout=10)
+            r = await client.get(url, headers=user_agent_header, timeout=10)
             r.raise_for_status()
             return r.json()
     except json.JSONDecodeError as e:

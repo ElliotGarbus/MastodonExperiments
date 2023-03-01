@@ -5,10 +5,8 @@ for each instance, use the directory api to get the user records
 store the results in the "results" directory, the file names are derived from the name of the server instance
 """
 
-
 import json
 import logging
-import os
 import warnings
 from datetime import datetime
 from pathlib import Path
@@ -22,7 +20,7 @@ from wakepy import keepawake
 from idna.core import InvalidCodepoint
 
 from mastodon_instances_key import mi_info
-from p2_get_instance_info import INSTANCE_API_VERSION
+from p2_get_instance_info import INSTANCE_API_VERSION, user_agent_header
 
 # turn off deprecation warning issue with a httpx dependency, anyio
 warnings.filterwarnings(action='ignore', category=TrioDeprecationWarning)
@@ -34,15 +32,10 @@ mi_info = {'name':'app_name',
            'token': 'token string'}
 """
 
-try:
-    headers = {'user-agent': os.environ['USERAGENT']}
-except KeyError:
-    headers = {}
-
 
 def get_instances(n):
     # returns a list of servers, uses instances.social api  https://instances.social/api/doc/
-    is_headers = {'Authorization': 'Bearer ' + mi_info['token']} | headers
+    is_headers = {'Authorization': 'Bearer ' + mi_info['token']} | user_agent_header
     params = {'count': n, 'include_down': True, 'language': 'en', 'sort_by': 'users', 'sort_order': 'desc'}
     r = httpx.get('https://instances.social/api/1.0/instances/list', headers=is_headers, params=params)
     d = r.json()
@@ -88,7 +81,7 @@ class MastodonInstance:
                     if user['url'] in self.unique_url:
                         continue
                 except TypeError as e:
-                    self.logger.error(f'TypeError, not a user record: {e} {type(user)=} {user}') # not a user record
+                    self.logger.error(f'TypeError, not a user record: {e} {type(user)=} {user}')  # not a user record
                     self.finished = True
                     return
                 self.unique_url.add(user['url'])
@@ -112,7 +105,7 @@ class MastodonInstance:
                                                        after=after_log(self.logger, logging.DEBUG)):
                         with attempt:
                             start = trio.current_time()
-                            r = await client.get(url, headers=headers, params=next(self.params_g), timeout=10)
+                            r = await client.get(url, headers=user_agent_header, params=next(self.params_g), timeout=10)
                             if r.status_code == 503 or (self.name == 'mastodon.social' and r.status_code != 200):
                                 raise TryAgain
                             r.raise_for_status()
@@ -129,7 +122,7 @@ class MastodonInstance:
                 except RetryError:
                     self.logger.error('Finished retries with no response')
                     self.finished = True
-                except InvalidCodepoint as e:
+                except InvalidCodepoint:
                     self.logger.error('Invalid codepoint, emoji {url}')
                     # Ignore urls with emoji. get_users to work with emojis not implemented
                     self.finished = True
@@ -143,6 +136,7 @@ async def worker(instances, results_dir, log_dir):
             mi = MastodonInstance(name=instance, log_dir=log_dir, results_dir=results_dir)
             await mi.get_users()
 
+
 def read_instance_file(file):
     """
     read the file, convert to json, sort based on api version, remove sites with zero users
@@ -151,17 +145,18 @@ def read_instance_file(file):
     :return: list of sorted instances, largest to the smallest by number of users.
     """
     data = [json.loads(x) for x in file.read().splitlines()]
-    if INSTANCE_API_VERSION == 'v1': # [stats][user_count]
+    if INSTANCE_API_VERSION == 'v1':  # [stats][user_count]
         instances = [x for x in data if x['stats']['user_count'] > 0]
-        instances.sort(key=lambda x:x['stats']['user_count'] )
+        instances.sort(key=lambda x: x['stats']['user_count'])
         return [u['uri'] for u in instances]
 
     elif INSTANCE_API_VERSION == 'v2':
         instances = [x for x in data if x['usage']['users']['active_month'] > 0]
-        instances.sort(key=lambda x:x['usage']['users']['active_month'])
+        instances.sort(key=lambda x: x['usage']['users']['active_month'])
         return [u['domain'] for u in instances]
     else:
         raise ValueError(f'Invalid value {INSTANCE_API_VERSION} for INSTANCE_API_VERSION')
+
 
 async def get_users():
     log_dir = Path('log')
