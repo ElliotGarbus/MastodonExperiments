@@ -50,7 +50,6 @@ def print_execution_times(t):
 
 def consolidate_results(m):
     # m is the execution mode either 'info' or 'users' from the cli
-    print('Consolidating results...', end='')
     files = Path('results').glob('*.*')
     with open('consolidated_output.txt', 'w') as outfile:
         with open('instance_info.txt') as info_file:
@@ -59,7 +58,6 @@ def consolidate_results(m):
             for file in files:
                 with open(file) as f:
                     outfile.write(f.read())
-    print('Done!')
 
 
 phases = ({'function': get_instances, 'timer_key': 'get_instances_time'},
@@ -79,4 +77,6 @@ with keepawake(keep_screen_awake=False):
         timer[phase['timer_key']] = end - start
 
 print_execution_times(timer)
+print('Consolidating results...', end='')
 consolidate_results(mode)
+print('Done!')
