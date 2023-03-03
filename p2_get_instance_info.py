@@ -21,6 +21,7 @@ from flags import INSTANCE_API_VERSION, user_agent_header
 
 def get_info_sync(url):
     """
+    todo: Not currently used, double check if added back to running code
     This function is a work-around for a bug in httpx.  Httpx does not work properly with emoji in the url
     fall back to requests if an invalid code point is detected (emoji in url)
     :param url:
@@ -131,6 +132,7 @@ async def get_info_task(instances, outfile):
         info = await get_info(name)
         if is_info_valid(info):
             clean_uri(info)
+            info.update({"_data_type": "instance"})
             with open(outfile, 'a') as f:
                 json.dump(info, f)
                 f.write('\n')
