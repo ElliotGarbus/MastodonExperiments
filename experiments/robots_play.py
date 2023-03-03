@@ -3,29 +3,30 @@ import json
 
 import requests
 
-rp = RobotFileParser()
-rp.set_url('https://az.social/robots.txt')
-rp.read()
-print(f'{rp.can_fetch("*","https://az.social/api")=}')
-# print(f'{rp.crawl_delay("*")=}')
-# print(f'{rp.mtime()=}')
+with open('../seed_instances.json') as f:
+    sites = json.load(f)
 
-# with open('../seed_instances.json') as f:
-#     sites = json.load(f)
-
-sites = ["mastodon.social", "mastodon.world", "mas.to", "mastodon.lol", "techhub.social", "universeodon.com"]
+# sites = ["mastodon.social", "mastodon.world", "az.social", "mas.to", "mastodon.lol", "techhub.social", "universeodon.com"]
+print(f'Number of sites: {len(sites)}')
 
 for site in sites:
     robot_url = f'https://{site}/robots.txt'
-    rp.set_url(robot_url)
-    rp.read()
-    url = f"https://{site}"
-    print(f' {url} {rp.can_fetch("*", url)=}')
+    rp = RobotFileParser(url=robot_url)
+    try:
+        r = requests.get(robot_url)
+    except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError):
+        # print(f'{site} network error')
+        continue
+    rp.parse(r.text.splitlines())
+    if not rp.can_fetch("MyCrawler", "/api/"):
+        print(f'{site} can not access the api')
+        print(r.text)
 
-for site in sites:
-    robot_url = f'https://{site}/robots.txt'
-    r = requests.get(robot_url)
-    print(robot_url)
-    print(r.text)
-
-
+# for site in sites:
+#     robot_url = f'https://{site}/robots.txt'
+#     rp = RobotFileParser(url=robot_url)
+#     # r = requests.get(robot_url)
+#     rp.read()
+#     # rp.parse(r.text.splitlines())
+#     print(f'{site}: {rp.can_fetch("MyCrawler", "/api/")=}')
+#     print(f'{site}: {rp.can_fetch("MyCrawler", "/media_proxy/")=}')
