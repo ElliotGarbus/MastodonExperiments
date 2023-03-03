@@ -13,6 +13,7 @@ import logging
 from pathlib import Path
 import warnings
 from urllib.parse import urlparse, urlunparse
+from urllib.robotparser import RobotFileParser
 
 import httpx
 from idna.core import InvalidCodepoint
@@ -35,6 +36,7 @@ def convert_idna_address(url: str) -> str:
 
 def get_peers_sync(url):
     """
+    todo: double check this code if it is going to be used...
     This function is a work-around for a bug in httpx.  Httpx does not work properly with emoji in the url
     fall back to requests if an invalid code point is detected (emoji in url)
     :param url:
@@ -66,10 +68,22 @@ def get_peers_sync(url):
 
 async def get_peers(name):
     print(f'Get peers from {name} ')
-    url = convert_idna_address(f"https://{name}/api/v1/instance/peers")
+    base = convert_idna_address(f"https://{name}")
+    url = base + '/api/v1/instance/peers'
+    robot_url = base + '/robots.txt'
     # properly encode urls that have emoji characters or other unicode
     try:
         async with httpx.AsyncClient() as client:
+            phase = 'getting robots.txt'
+            r = await client.get(robot_url, headers=user_agent_header, timeout=10)
+            r.raise_for_status()
+            rp = RobotFileParser(url=robot_url)
+            rp.parse(r.text.splitlines())
+            ua = user_agent_header.get('user-agent', '*')
+            if not rp.can_fetch(ua, "/api/"):
+                logging.info(f'{name} does not support api access')
+                return []  # returning no peers, name will not be included for additional actions
+            phase = 'getting url'
             r = await client.get(url, headers=user_agent_header, timeout=10)
             r.raise_for_status()
             return r.json()
@@ -77,10 +91,10 @@ async def get_peers(name):
         logging.error(f'JSON Error: {e}')
         return []
     except httpx.HTTPStatusError as e:
-        logging.error(f'Response {e.response.status_code} while requesting {e.request.url!r}.')
+        logging.error(f'Response {e.response.status_code} while {phase} requesting {e.request.url!r}.')
         return []
     except httpx.RequestError as e:
-        logging.error(f'Connection Error {e} on {url}')
+        logging.error(f'Connection Error {e} on {url} while {phase}')
         return []
     except InvalidCodepoint as e:
         print(f'Invalid URL: {url}')
@@ -89,7 +103,7 @@ async def get_peers(name):
             return []
         return get_peers_sync(url)
     except Exception as e:
-        logging.exception(f'{name} {url} {e}')
+        logging.exception(f'{name} {url} {e} while {phase}')
         print(f'UNKNOWN EXCEPTION: {url} {name} {e}')
         return []
 
@@ -162,7 +176,7 @@ async def crawl_peers(known, unknown, i_file, g_file, z_file):
 async def get_instances(ignore_zero_peers=True):
     logfile = Path('get_instances_log.txt')
     logfile.unlink(missing_ok=True)
-    logging.basicConfig(filename=logfile, level=logging.ERROR)
+    logging.basicConfig(filename=logfile, level=logging.INFO)
     instances_file = Path('mastodon_instances.txt')
     instances_file.unlink(missing_ok=True)
     graph_file = Path('graph.txt')
