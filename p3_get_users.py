@@ -85,6 +85,8 @@ class MastodonInstance:
                     self.finished = True
                     return
                 self.unique_url.add(user['url'])
+                user.update({"_data_type": "user", "_domain": self.name,
+                             "_full_user": f"{user['username']}@{self.name}"})
                 json.dump(user, f)
                 f.write('\n')
         self.logger.info(f'{len(self.unique_url)} unique records')
