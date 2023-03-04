@@ -74,7 +74,7 @@ async def get_peers(name):
     # properly encode urls that have emoji characters or other unicode
     try:
         async with httpx.AsyncClient() as client:
-            phase = 'getting robots.txt'
+            phase = 'getting robots.txt'  # used in logging messages
             r = await client.get(robot_url, headers=user_agent_header, timeout=10)
             r.raise_for_status()
             rp = RobotFileParser(url=robot_url)
