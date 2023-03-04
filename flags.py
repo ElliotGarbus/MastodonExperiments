@@ -1,5 +1,7 @@
 """
 Constants that control rarely changed functionality, and the user-agent header
+The environment variable USERAGENT is used to set the user-agent used in httpx requests, and
+used to set the user aggent when processing robots.txt
 """
 import os
 
