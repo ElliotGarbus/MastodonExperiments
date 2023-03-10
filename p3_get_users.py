@@ -57,7 +57,7 @@ class MastodonInstance:
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.INFO)
         self.file_handler = logging.FileHandler(log_fn)
-        formatter = logging.Formatter('{levelname}:{asctime}:{name}:{message}',
+        formatter = logging.Formatter('{levelname} | {asctime} | {name} | {message}',
                                       style='{', datefmt='%Y-%m-%d %H:%M:%S')
         self.file_handler.setFormatter(formatter)
         self.logger.addHandler(self.file_handler)
