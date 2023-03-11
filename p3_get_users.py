@@ -54,7 +54,7 @@ class MastodonInstance:
         fn = self.name.replace('.', '_').replace('/', '_') + '.txt'
         self.data_fn = results_dir / fn
         log_fn = log_dir / fn
-        self.logger = logging.getLogger(name)
+        self.logger = logging.getLogger(log_fn.stem)
         self.logger.setLevel(logging.INFO)
         self.file_handler = logging.FileHandler(log_fn)
         formatter = logging.Formatter('{levelname} | {asctime} | {name} | {message}',
