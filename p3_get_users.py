@@ -57,6 +57,7 @@ class MastodonInstance:
         self.logger = logging.getLogger(log_fn.stem)
         self.logger.setLevel(logging.INFO)
         self.file_handler = logging.FileHandler(log_fn)
+        # todo: look ot change from "name" below... to getting the domain name, not the log in the mesage
         formatter = logging.Formatter('{levelname} | {asctime} | {name} | {message}',
                                       style='{', datefmt='%Y-%m-%d %H:%M:%S')
         self.file_handler.setFormatter(formatter)
