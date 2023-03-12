@@ -1,6 +1,7 @@
 from pathlib import Path
 from datetime import datetime
 from pprint import pprint
+import csv
 
 """
 Parse log files and generate stats
@@ -10,7 +11,6 @@ INFO | 2023-03-11 10:01:33 | almere_social | 11 unique records
 INFO | 2023-03-11 10:01:35 | almere_social | 11 unique records
 INFO | 2023-03-11 10:01:35 | almere_social | All Data Returned
 
-# to do - why is the log converting alemer.social to almere_social?
 """
 
 
@@ -31,7 +31,15 @@ def duration(log_lines):
     return end - start
 
 def domain(log_lines):
-    return log_lines[0].split('|')[2].strip()
+    return log_lines[0].split('|')[2].strip().replace('_', '.')
+
+def write_stats_file(stats_list):
+    with open('log_stats.csv', 'w', newline='') as csvfile:
+        fieldnames = ['domain', 'records', 'duration']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, dialect=csv.excel)
+        writer.writeheader()
+        for row in stats_list:
+            writer.writerow(row)
 
 
 error_response = 0
@@ -48,16 +56,13 @@ for fn in p.glob('*.*'):
         zero_records += 1
     else:
         responding_servers += 1
-        stats.append([domain(lines), number_of_records(lines),duration(lines)])
-stats.sort(key=lambda x: x[1], reverse=True)
+        stats.append({'domain': domain(lines), 'records': number_of_records(lines),
+                      'duration': duration(lines).seconds})
+stats.sort(key=lambda x: x['records'], reverse=True)
 pprint(stats[:20])
 
 pprint(stats[-20:])
-
-
-
-
-
+write_stats_file(stats)
 
 print(f'Servers that respond with an error: {error_response}')
 print(f'Servers that respond with zero records: {zero_records}')
