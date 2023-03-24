@@ -10,6 +10,7 @@ import logging
 import warnings
 from datetime import datetime
 from pathlib import Path
+import sys
 
 import httpx
 import trio
@@ -184,5 +185,8 @@ async def get_users():
 
 
 if __name__ == '__main__':
-    with keepawake(keep_screen_awake=False):
+    if sys.platform == 'linux':
         trio.run(get_users)
+    else:
+        with keepawake(keep_screen_awake=False):
+            trio.run(get_users)
