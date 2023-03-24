@@ -11,6 +11,7 @@ repeat until there are no unknowns in this "task"
 import json
 import logging
 from pathlib import Path
+import sys
 import warnings
 from urllib.parse import urlparse, urlunparse
 from urllib.robotparser import RobotFileParser
@@ -207,5 +208,8 @@ async def get_instances(ignore_zero_peers=True):
 
 
 if __name__ == '__main__':
-    with keepawake(keep_screen_awake=False):
+    if sys.platform == 'linux':
         trio.run(get_instances)
+    else:
+        with keepawake(keep_screen_awake=False):
+            trio.run(get_instances)
