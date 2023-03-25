@@ -8,6 +8,7 @@ px_get_mastodon_data.py run all phases to collect all the mastodon user data
 import argparse
 from datetime import datetime, timedelta
 from pathlib import Path
+import sys
 
 import trio
 from wakepy import keepawake
@@ -60,23 +61,31 @@ def consolidate_results(m):
                     outfile.write(f.read())
 
 
-phases = ({'function': get_instances, 'timer_key': 'get_instances_time'},
-          {'function': get_instance_info, 'timer_key': 'get_info_time'},
-          {'function': get_users, 'timer_key': 'get_users_time'})
-timer = {}
+def main():
+    phases = ({'function': get_instances, 'timer_key': 'get_instances_time'},
+              {'function': get_instance_info, 'timer_key': 'get_info_time'},
+              {'function': get_users, 'timer_key': 'get_users_time'})
+    timer = {}
 
-mode = cli()
-if mode == 'info':
-    phases = phases[:2]
+    mode = cli()
+    if mode == 'info':
+        phases = phases[:2]
 
-with keepawake(keep_screen_awake=False):
     for phase in phases:
         start = datetime.now()
         trio.run(phase['function'])
         end = datetime.now()
         timer[phase['timer_key']] = end - start
 
-    print_execution_times(timer)
-    print('Consolidating results...', end='')
-    consolidate_results(mode)
-    print('Done!')
+        print_execution_times(timer)
+        print('Consolidating results...', end='')
+        consolidate_results(mode)
+        print('Done!')
+
+
+if __name__ == '__main__':
+    if sys.platform == 'linux':
+        main()
+    else:
+        with keepawake(keep_screen_awake=False):
+            main()
