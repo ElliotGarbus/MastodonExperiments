@@ -77,10 +77,10 @@ def main():
         end = datetime.now()
         timer[phase['timer_key']] = end - start
 
-        print_execution_times(timer)
-        print('Consolidating results...', end='')
-        consolidate_results(mode)
-        print('Done!')
+    print_execution_times(timer)
+    print('Consolidating results...', end='')
+    consolidate_results(mode)
+    print('Done!')
 
 
 if __name__ == '__main__':
