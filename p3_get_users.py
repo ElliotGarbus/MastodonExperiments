@@ -7,6 +7,7 @@ store the results in the "results" directory, the file names are derived from th
 
 import json
 import logging
+import time
 import warnings
 from datetime import datetime
 from pathlib import Path
@@ -50,6 +51,8 @@ def delete_files(p_dir):
 
 
 class MastodonInstance:
+    run_id = None  # hold an int from time.time_ns() used to indicate all records from the same run
+
     def __init__(self, name, results_dir, log_dir):
         self.name = name
         fn = self.name.replace('.', '_').replace('/', '_') + '.txt'
@@ -87,7 +90,8 @@ class MastodonInstance:
                     return
                 self.unique_url.add(user['url'])
                 user.update({"_data_type": "user", "_domain": self.name,
-                             "_full_user": f"@{user['username']}@{self.name}"})
+                             "_full_user": f"@{user['username']}@{self.name}",
+                             "_run_id": self.run_id})
                 json.dump(user, f)
                 f.write('\n')
         self.logger.info(f'{len(self.unique_url)} unique records')
@@ -178,6 +182,7 @@ async def get_users():
         instances = [instance['name'] for instance in get_instances(0)]  # 0 is all instances
         print('instances received from instances.social')
 
+    MastodonInstance.run_id = time.time_ns()  # set the run_id class variable
     async with trio.open_nursery() as nursery:
         for _ in range(500):  # number of concurrent tasks
             nursery.start_soon(worker, instances, results_dir, log_dir)
