@@ -1,0 +1,4 @@
+friendica.youhavewrites.social
+mythical.sociables.io
+realmac.sociables.io
+panic.sociables.io

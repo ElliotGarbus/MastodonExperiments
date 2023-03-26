@@ -135,10 +135,10 @@ class MastodonInstance:
         self.file_handler.close()
 
 
-async def worker(instances, results_dir, log_dir):
+async def worker(instances, results_dir, log_dir, user_excludes):
     while instances:
         instance = instances.pop()
-        if instance not in ['friendica.youhavewrites.social']:  # bad instances go here
+        if instance not in user_excludes:  # bad instances go here
             mi = MastodonInstance(name=instance, log_dir=log_dir, results_dir=results_dir)
             await mi.get_users()
 
@@ -181,10 +181,17 @@ async def get_users():
         instances = [instance['name'] for instance in get_instances(0)]  # 0 is all instances
         print('instances received from instances.social')
 
+    exclude_file = Path('user_exclude.txt') # file holds list of instances to exclude from scan
+    try:
+        with open(exclude_file) as f:
+            user_excludes = f.read().splitlines()
+    except FileNotFoundError:
+        user_excludes = []
+
     MastodonInstance.run_id = time.time_ns()  # set the run_id class variable
     async with trio.open_nursery() as nursery:
         for _ in range(500):  # number of concurrent tasks
-            nursery.start_soon(worker, instances, results_dir, log_dir)
+            nursery.start_soon(worker, instances, results_dir, log_dir, user_excludes)
     print('Done!')
 
 
