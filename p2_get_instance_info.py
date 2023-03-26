@@ -5,6 +5,7 @@ store the instance info in instance_info.txt
 
 import json
 import logging
+import time
 import warnings
 from pathlib import Path
 
@@ -126,13 +127,20 @@ def clean_uri(info):
         raise ValueError(f'Invalid value {INSTANCE_API_VERSION} for INSTANCE_API_VERSION')
 
 
-async def get_info_task(instances, outfile):
+async def get_info_task(instances, outfile, run_id):
+    """
+    Get the instance info record from each sever, and store to the outfile
+    :param instances: list of mastodon/fediverse instnaces
+    :param outfile: filename of output file
+    :param run_id: a timestamp of the run, used for grouping records
+    :return:
+    """
     while instances:
         name = instances.pop()
         info = await get_info(name)
         if is_info_valid(info):
             clean_uri(info)
-            info.update({"_data_type": "instance"})
+            info.update({"_data_type": "instance", "_run_id": run_id})
             with open(outfile, 'a') as f:
                 json.dump(info, f)
                 f.write('\n')
@@ -149,9 +157,11 @@ async def get_instance_info():
     with open('mastodon_instances.txt') as f:
         instances = f.read().splitlines()
 
+    run_id = time.time_ns()
+
     async with trio.open_nursery() as nursery:
         for x in range(500):
-            nursery.start_soon(get_info_task, instances, outfile)
+            nursery.start_soon(get_info_task, instances, outfile, run_id)
 
 
 if __name__ == '__main__':
