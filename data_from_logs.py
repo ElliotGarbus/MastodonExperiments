@@ -7,10 +7,11 @@ import csv
 Parse log files and generate stats
 
 Sample Log file format:
-INFO | 2023-03-11 10:01:33 | almere_social | 11 unique records
-INFO | 2023-03-11 10:01:35 | almere_social | 11 unique records
-INFO | 2023-03-11 10:01:35 | almere_social | All Data Returned
-
+INFO | 2023-03-26 11:49:51,390 | 4bear_com | 40 unique records
+INFO | 2023-03-26 11:49:53,761 | 4bear_com | 80 unique records
+INFO | 2023-03-26 11:49:55,848 | 4bear_com | 99 unique records
+INFO | 2023-03-26 11:49:57,870 | 4bear_com | 99 unique records
+INFO | 2023-03-26 11:49:57,870 | 4bear_com | All Data Returned
 """
 
 
@@ -25,9 +26,9 @@ def duration(log_lines):
     # get start and end time from log, return the duration as a timedelta
     # get start time from lines [0], end time for log_lines[-1]
     start_str = log_lines[0].split('|')[1].strip()
-    start = datetime.strptime(start_str, '%Y-%m-%d %H:%M:%S')
+    start = datetime.strptime(start_str, '%Y-%m-%d %H:%M:%S,%f')
     end_str = log_lines[-1].split('|')[1].strip()
-    end = datetime.strptime(end_str, '%Y-%m-%d %H:%M:%S')
+    end = datetime.strptime(end_str, '%Y-%m-%d %H:%M:%S,%f')
     return end - start
 
 def domain(log_lines):
@@ -57,7 +58,7 @@ for fn in p.glob('*.*'):
     else:
         responding_servers += 1
         stats.append({'domain': domain(lines), 'records': number_of_records(lines),
-                      'duration': duration(lines).seconds})
+                      'duration': str(duration(lines))})
 stats.sort(key=lambda x: x['records'], reverse=True)
 pprint(stats[:20])
 
