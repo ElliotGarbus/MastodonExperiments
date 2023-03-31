@@ -69,6 +69,16 @@ class MastodonInstance:
         self.unique_url = set()
         self.finished = False  # used to indicate end of scan, or fatal error
 
+    def no_new_users(self, users):
+        for user in users:
+            try:
+                if user['url'] not in self.unique_url:
+                    return False
+            except TypeError as e:
+                self.logger.error(f'TypeError, not a user record: {e} {type(user)=} {user}')  # not a user record
+                return True
+        return True
+
     def save(self, r):
         print(f'save {self.name} {datetime.now():%m/%d/%Y %H:%M:%S}')
         try:
@@ -77,13 +87,16 @@ class MastodonInstance:
             self.logger.error(f'JSON error {e}')
             self.finished = True
             return
+        if self.no_new_users(users):
+            self.logger.info(f'{len(self.unique_url)} unique records - Ending Data Collection')
+            self.finished = True
+            return
         with open(self.data_fn, 'a') as f:  # only save unique data
             for user in users:
-                # print(user)
                 try:
                     if user['url'] in self.unique_url:
                         continue
-                except TypeError as e:
+                except TypeError as e:  # todo: remove code - this check is in self.no_new_users()
                     self.logger.error(f'TypeError, not a user record: {e} {type(user)=} {user}')  # not a user record
                     self.finished = True
                     return
@@ -94,9 +107,9 @@ class MastodonInstance:
                 json.dump(user, f)
                 f.write('\n')
         self.logger.info(f'{len(self.unique_url)} unique records')
-        if not users:
-            self.logger.info('All Data Returned')
-            self.finished = True
+        # if not users:
+        #     self.logger.info('All Data Returned')
+        #     self.finished = True
 
     async def get_users(self):
         url = f"https://{self.name}/api/v1/directory"
