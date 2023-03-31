@@ -93,13 +93,8 @@ class MastodonInstance:
             return
         with open(self.data_fn, 'a') as f:  # only save unique data
             for user in users:
-                try:
-                    if user['url'] in self.unique_url:
-                        continue
-                except TypeError as e:  # todo: remove code - this check is in self.no_new_users()
-                    self.logger.error(f'TypeError, not a user record: {e} {type(user)=} {user}')  # not a user record
-                    self.finished = True
-                    return
+                if user['url'] in self.unique_url:
+                    continue
                 self.unique_url.add(user['url'])
                 user.update({"_data_type": "user", "_domain": self.name,
                              "_full_user": f"@{user['username']}@{self.name}",
