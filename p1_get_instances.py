@@ -142,7 +142,7 @@ async def crawl_peers(known, unknown, i_file, g_file, z_file):
             peers = []
         while None in peers:  # some sites have a trailing None in the list
             peers.remove(None)
-        bad_chars = set([':', '..', '@', '/'])  #  strings not allowed in instance name
+        bad_chars = set([':', '@', '/'])  #  chars not allowed in instance name
         peers = [x for x in peers if not any([x.endswith('activitypub-troll.cf'),
                                               x.endswith('misskey-forkbomb.cf'),
                                               x.endswith('repl.co'),
@@ -154,6 +154,7 @@ async def crawl_peers(known, unknown, i_file, g_file, z_file):
                                               x in ('sleeping.town', 'mastodon.sleeping.town'),
                                               not bad_chars.isdisjoint(set(x)),
                                               '.' not in x,  # must have a dot
+                                              '..' in x,
                                               len(x.split('.')[0]) >= 40,
                                               x.split('.')[0].isupper(),
                                               ])]
