@@ -93,7 +93,7 @@ class MastodonInstance:
             return
         with open(self.data_fn, 'a') as f:  # only save unique data
             for user in users:
-                if user['url'] in self.unique_url:
+                if user['url'] in self.unique_url:  # note: invalid records captured in self.no_new_user()
                     continue
                 self.unique_url.add(user['url'])
                 user.update({"_data_type": "user", "_domain": self.name,
