@@ -154,6 +154,8 @@ async def crawl_peers(known, unknown, i_file, g_file, z_file):
                                               ':' in x,
                                               '..' in x,
                                               '.' not in x,
+                                              '@' in x,
+                                              '/' in 'x',
                                               len(x.split('.')[0]) >= 40,
                                               x.split('.')[0].isupper(),
                                               ])]
