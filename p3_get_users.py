@@ -160,11 +160,14 @@ def read_instance_file(file):
     """
     data = [json.loads(x) for x in file.read().splitlines()]
     if INSTANCE_API_VERSION == 'v1':  # [stats][user_count]
-        instances = [x for x in data if x['stats']['user_count'] > 0]
-        instances.sort(key=lambda x: x['stats']['user_count'])
-        return [u['uri'] for u in instances]
+        # remove instances with no users, create tuple of uri and user count
+        instances = [(x['uri'],  x['stats']['user_count']) for x in data if x['stats']['user_count'] > 0]
+        instances = list(set(instances))  # remove duplicates
+        instances.sort(key=lambda x: x[1]) # sort based on number of users
+        return [u[0] for u in instances]
 
     elif INSTANCE_API_VERSION == 'v2':
+        raise NotImplementedError('Need to use set to remove duplicates, code not tested')
         instances = [x for x in data if x['usage']['users']['active_month'] > 0]
         instances.sort(key=lambda x: x['usage']['users']['active_month'])
         return [u['domain'] for u in instances]
